@@ -2,6 +2,29 @@
 
 Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
+## M5 — importeren uit de galerij
+
+**Opgeleverd**
+
+- Importeren via de systeem-fotokiezer met multi-select. Die vraagt geen
+  opslagpermissie: de app krijgt alleen de foto's die je zelf aantikt.
+- De opnamedatum wordt in deze volgorde bepaald: EXIF `DateTimeOriginal`, anders uit
+  de bestandsnaam (`IMG_20240612_153045`, `PXL_…`, `2024-06-12 15.30.45`,
+  `Screenshot_…`), anders wordt hij gevraagd met de bestandsdatum voorgevuld.
+  Sla je die vraag over, dan krijgt de foto het label "datum onzeker" en is hij in
+  het dagdetail als zodanig te herkennen.
+- Elk bestand wordt gekopieerd naar de seriemap en krijgt een naam in dezelfde stijl
+  als opnames. Er wordt nooit naar de oorspronkelijke locatie verwezen, want die
+  foto kan verdwijnen.
+- Dubbelen binnen dezelfde serie (zelfde tijdstip én zelfde afmetingen) worden
+  overgeslagen.
+- GPS wordt ook bij import uit de EXIF gehaald, en de kopie gaat mee naar de
+  backupmap.
+- Na afloop een overzicht: hoeveel toegevoegd, hoeveel overgeslagen, hoeveel met een
+  onzekere datum, hoeveel mislukt.
+- De datumherkenning uit bestandsnamen zit in `kern` en wordt door unit tests gedekt,
+  inclusief de gevallen waarin hij juist niets mag herkennen.
+
 ## M4 — bewerken: roteren, rechtzetten en bijsnijden
 
 **Opgeleverd**
