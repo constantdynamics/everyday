@@ -25,8 +25,13 @@ Zie `CHANGELOG.md` voor wat er per mijlpaal is opgeleverd.
 
 ### Vereisten
 
-- Android Studio (huidige stabiele versie) of alleen een JDK 17
+- Android Studio (huidige stabiele versie), of alleen een JDK 17 of nieuwer
 - Een toestel met Android 14 of nieuwer (`minSdk 34`)
+
+De bouwketen ligt vast in `gradle/libs.versions.toml` en de Gradle-wrapper:
+AGP 9.4, Gradle 9.7.1, Kotlin 2.4.20, `compileSdk`/`targetSdk` 37. De workflow
+**Versiecheck** laat op verzoek zien welke stabiele versies er beschikbaar zijn,
+zodat bijwerken een bewuste keuze blijft.
 
 ### Debug-build op je eigen machine
 
@@ -110,7 +115,10 @@ je de serie aanmaakt; hernoem je de serie later, dan verandert alleen de naam di
 je in de app ziet en blijft de map staan.
 
 De administratie (series, foto's, dagkeuzes) staat in een Room-database in de
-privéopslag van de app.
+privéopslag van de app. Het geëxporteerde databaseschema staat in `app/schemas/`
+en is nodig om latere migraties te kunnen controleren. De build legt dat schema
+automatisch vast zodra het verandert, omdat het niet in elke ontwikkelomgeving
+lokaal te genereren is.
 
 ## Backupmap instellen
 

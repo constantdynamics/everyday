@@ -50,6 +50,15 @@ Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 - **Maandkalenderweergave:** niet gebouwd. Een kalender toont per definitie de
   lege dagen, terwijl overgeslagen dagen juist onzichtbaar horen te blijven.
 
+**Bouwketen**
+
+Na de eerste groene build is de hele keten op de huidige stabiele versies gezet:
+Gradle 9.7.1, AGP 9.4.0, Kotlin 2.4.20, KSP 2.3.12, `compileSdk` en `targetSdk`
+37, Compose BOM 2026.09.00, Room 2.8.5, CameraX 1.6.2. AGP 9 brengt Kotlin zelf
+mee, dus de losse `kotlin-android`-plugin is uit het app-buildbestand verdwenen.
+Het geëxporteerde Room-schema (versie 1) staat in `app/schemas/` en wordt door de
+build bijgewerkt zodra het verandert.
+
 **Nog niet in M1**
 
 Ghost overlay, dagdetail, foto-van-de-dag kiezen, verwijderen, vervangen,
