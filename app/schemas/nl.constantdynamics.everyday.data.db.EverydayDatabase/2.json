@@ -1,0 +1,327 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "c658741fc63539bbf743607fd1cf6a3c",
+    "entities": [
+      {
+        "tableName": "serie",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `naam` TEXT NOT NULL, `mapNaam` TEXT NOT NULL, `aangemaaktOp` INTEGER NOT NULL, `lensRichting` TEXT NOT NULL, `volgorde` INTEGER NOT NULL, `gearchiveerd` INTEGER NOT NULL, `verwijderdOp` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "naam",
+            "columnName": "naam",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mapNaam",
+            "columnName": "mapNaam",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aangemaaktOp",
+            "columnName": "aangemaaktOp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lensRichting",
+            "columnName": "lensRichting",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volgorde",
+            "columnName": "volgorde",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gearchiveerd",
+            "columnName": "gearchiveerd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verwijderdOp",
+            "columnName": "verwijderdOp",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_serie_mapNaam",
+            "unique": true,
+            "columnNames": [
+              "mapNaam"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_serie_mapNaam` ON `${TABLE_NAME}` (`mapNaam`)"
+          }
+        ]
+      },
+      {
+        "tableName": "foto",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `serieId` INTEGER NOT NULL, `gemaaktOp` INTEGER NOT NULL, `dagSleutel` TEXT NOT NULL, `bron` TEXT NOT NULL, `origineelUri` TEXT NOT NULL, `bestandsnaam` TEXT NOT NULL, `breedte` INTEGER NOT NULL, `hoogte` INTEGER NOT NULL, `rotatie` INTEGER NOT NULL, `rechtzetHoek` REAL NOT NULL, `cropL` REAL, `cropT` REAL, `cropR` REAL, `cropB` REAL, `bewerktUri` TEXT, `datumOnzeker` INTEGER NOT NULL, `verwijderdOp` INTEGER, FOREIGN KEY(`serieId`) REFERENCES `serie`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serieId",
+            "columnName": "serieId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gemaaktOp",
+            "columnName": "gemaaktOp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dagSleutel",
+            "columnName": "dagSleutel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bron",
+            "columnName": "bron",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origineelUri",
+            "columnName": "origineelUri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bestandsnaam",
+            "columnName": "bestandsnaam",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "breedte",
+            "columnName": "breedte",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hoogte",
+            "columnName": "hoogte",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rotatie",
+            "columnName": "rotatie",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rechtzetHoek",
+            "columnName": "rechtzetHoek",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cropL",
+            "columnName": "cropL",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "cropT",
+            "columnName": "cropT",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "cropR",
+            "columnName": "cropR",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "cropB",
+            "columnName": "cropB",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "bewerktUri",
+            "columnName": "bewerktUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "datumOnzeker",
+            "columnName": "datumOnzeker",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verwijderdOp",
+            "columnName": "verwijderdOp",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_foto_serieId_dagSleutel",
+            "unique": false,
+            "columnNames": [
+              "serieId",
+              "dagSleutel"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_foto_serieId_dagSleutel` ON `${TABLE_NAME}` (`serieId`, `dagSleutel`)"
+          },
+          {
+            "name": "index_foto_serieId_gemaaktOp",
+            "unique": false,
+            "columnNames": [
+              "serieId",
+              "gemaaktOp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_foto_serieId_gemaaktOp` ON `${TABLE_NAME}` (`serieId`, `gemaaktOp`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "serie",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "serieId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "dagkeuze",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serieId` INTEGER NOT NULL, `dagSleutel` TEXT NOT NULL, `fotoId` INTEGER NOT NULL, PRIMARY KEY(`serieId`, `dagSleutel`))",
+        "fields": [
+          {
+            "fieldPath": "serieId",
+            "columnName": "serieId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dagSleutel",
+            "columnName": "dagSleutel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fotoId",
+            "columnName": "fotoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serieId",
+            "dagSleutel"
+          ]
+        }
+      },
+      {
+        "tableName": "backuptaak",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `serieMapNaam` TEXT NOT NULL, `bestandsnaam` TEXT NOT NULL, `bronUri` TEXT NOT NULL, `submap` TEXT, `aangemaaktOp` INTEGER NOT NULL, `pogingen` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serieMapNaam",
+            "columnName": "serieMapNaam",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bestandsnaam",
+            "columnName": "bestandsnaam",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bronUri",
+            "columnName": "bronUri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "submap",
+            "columnName": "submap",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "aangemaaktOp",
+            "columnName": "aangemaaktOp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pogingen",
+            "columnName": "pogingen",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_backuptaak_bronUri",
+            "unique": true,
+            "columnNames": [
+              "bronUri"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_backuptaak_bronUri` ON `${TABLE_NAME}` (`bronUri`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c658741fc63539bbf743607fd1cf6a3c')"
+    ]
+  }
+}
