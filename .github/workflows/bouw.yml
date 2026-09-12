@@ -62,9 +62,10 @@ jobs:
             exit 1
           fi
           find app/schemas -name '*.json' | sort | while read -r bestand; do
-            echo "===== $bestand"
-            cat "$bestand"
-            echo
+            echo "===== $bestand ($(wc -c < "$bestand") bytes)"
+            # Als één base64-regel, zodat het schema in zijn geheel uit de log te
+            # halen is; blob-opslag van artefacten is niet overal bereikbaar.
+            echo "BASE64:$(base64 -w0 "$bestand")"
           done
 
       - name: Room-schema bewaren
