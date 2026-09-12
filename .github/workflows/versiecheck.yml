@@ -1,0 +1,51 @@
+name: Versiecheck
+
+# Draait alleen op verzoek. Drukt af welke versies van de gebruikte onderdelen
+# beschikbaar zijn, zodat bijwerken een bewuste handeling blijft in plaats van
+# een automatische.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  versies:
+    name: Beschikbare versies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Google Maven en Maven Central
+        run: |
+          toon() {
+            printf '%-52s' "$2"
+            curl -sL "$1/$2/maven-metadata.xml" \
+              | grep -o '<latest>[^<]*</latest>\|<release>[^<]*</release>' | sed 's/<[^>]*>//g' | tr '\n' ' '
+            curl -sL "$1/$2/maven-metadata.xml" \
+              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | tail -4 | tr '\n' ' '
+            echo
+          }
+          G=https://dl.google.com/dl/android/maven2
+          C=https://repo1.maven.org/maven2
+          for a in com/android/tools/build/gradle androidx/compose/compose-bom androidx/camera/camera-core \
+                   androidx/room/room-runtime androidx/navigation/navigation-compose \
+                   androidx/lifecycle/lifecycle-runtime-compose androidx/activity/activity-compose \
+                   androidx/datastore/datastore-preferences androidx/exifinterface/exifinterface \
+                   androidx/core/core-ktx androidx/media3/media3-transformer; do
+            toon "$G" "$a"
+          done
+          for a in org/jetbrains/kotlin/kotlin-gradle-plugin \
+                   com/google/devtools/ksp/symbol-processing-gradle-plugin \
+                   org/jetbrains/kotlinx/kotlinx-coroutines-android; do
+            toon "$C" "$a"
+          done
+
+      - name: Android SDK op de runner
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "platforms:"; ls "$SDK/platforms" 2>/dev/null | sort -V | tr '\n' ' '; echo
+          echo "build-tools:"; ls "$SDK/build-tools" 2>/dev/null | sort -V | tr '\n' ' '; echo
+          echo "beschikbare platforms volgens sdkmanager:"
+          "$SDK"/cmdline-tools/latest/bin/sdkmanager --list 2>/dev/null \
+            | grep -E '^\s+platforms;android-[0-9]+\s' | awk '{print $1}' | sort -V | tail -8 | tr '\n' ' '
+          echo
+          echo "gradle: $(gradle --version 2>/dev/null | grep -m1 Gradle || echo onbekend)"
