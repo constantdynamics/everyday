@@ -27,3 +27,16 @@ fun tijdstip(moment: Instant, zone: ZoneId = ZoneId.systemDefault()): String =
     TIJD.format(moment.atZone(zone))
 
 fun aantalFotos(aantal: Int): String = if (aantal == 1) "1 foto" else "$aantal foto's"
+
+/** Bestandsgroottes zoals je ze wilt lezen: "1,2 GB" in plaats van een berg cijfers. */
+fun leesbareGrootte(bytes: Long): String {
+    if (bytes <= 0L) return "0 MB"
+    val mb = bytes / 1024.0 / 1024.0
+    return if (mb >= 1024) {
+        String.format(NEDERLANDS, "%.1f GB", mb / 1024)
+    } else if (mb >= 10) {
+        String.format(NEDERLANDS, "%.0f MB", mb)
+    } else {
+        String.format(NEDERLANDS, "%.1f MB", mb)
+    }
+}

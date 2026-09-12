@@ -17,6 +17,9 @@ class SerieRepository(private val serieDao: SerieDao) {
 
     suspend fun serieEenmalig(serieId: Long): SerieEntiteit? = serieDao.serieEenmalig(serieId)
 
+    suspend fun alleSeries(): List<SerieEntiteit> =
+        serieDao.alles().filter { it.verwijderdOp == null }
+
     suspend fun maakSerie(naam: String): Long {
         val schoon = naam.trim()
         val mapNaam = maakUniekeMapNaam(maakMapNaam(schoon)) { serieDao.mapNaamBestaat(it) }

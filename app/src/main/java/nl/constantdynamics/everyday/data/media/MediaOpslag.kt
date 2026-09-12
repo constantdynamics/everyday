@@ -217,6 +217,38 @@ class MediaOpslag(private val context: Context) {
         }.getOrNull()
     }
 
+    /** Hoeveel ruimte de foto's en video's van één serie innemen. */
+    suspend fun opslaggebruik(mapNaam: String): Long = withContext(Dispatchers.IO) {
+        var totaal = 0L
+        totaal += tel(
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+            MediaStore.Images.Media.RELATIVE_PATH,
+            relatiefPad(mapNaam) + "/%",
+        )
+        totaal += tel(
+            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+            MediaStore.Video.Media.DISPLAY_NAME,
+            mapNaam + "_timelapse_%",
+        )
+        totaal
+    }
+
+    private fun tel(collectie: Uri, kolom: String, patroon: String): Long = runCatching {
+        resolver.query(
+            collectie,
+            arrayOf(MediaStore.MediaColumns.SIZE),
+            "$kolom LIKE ?",
+            arrayOf(patroon),
+            null,
+        )?.use { rij ->
+            var som = 0L
+            while (rij.moveToNext()) {
+                if (!rij.isNull(0)) som += rij.getLong(0)
+            }
+            som
+        } ?: 0L
+    }.getOrDefault(0L)
+
     /** Verwijdert het bestand definitief uit MediaStore. */
     suspend fun verwijderBestand(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         runCatching { resolver.delete(uri, null, null) > 0 }.getOrDefault(false)

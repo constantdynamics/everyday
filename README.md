@@ -7,19 +7,29 @@ camerabeeld zodat de compositie gelijk blijft. Later maak je er een timelapse va
 De app praat met niets en niemand: geen netwerk, geen account, geen cloud, geen
 meldingen. Alles staat lokaal op je toestel.
 
-## Stand van zaken
+## Wat de app kan
 
-| Mijlpaal | Inhoud | Status |
-|---|---|---|
-| M1 | Projectskelet, series, opnamescherm, opslaan via MediaStore, galerij | ✅ |
-| M2 | Ghost overlay, lens per serie, dagdetail, foto-van-de-dag, verwijderen, vervangen | volgt |
-| M3 | Backupmap via SAF, automatische kopie, wachtrij, `everyday-metadata.json`, herstellen | volgt |
-| M4 | Bewerken: roteren, rechtzetten en bijsnijden met behoud van het origineel | volgt |
-| M5 | Importeren uit de galerij | volgt |
-| M6 | Timelapse zonder muziek | volgt |
-| M7 | Muziek, resterende instellingen, opslaggebruik, polish | volgt |
+- **Series**: onbeperkt, zelf aan te maken, met per serie een eigen onthouden
+  cameralens. Vanaf het startscherm maak je in twee tikken een foto.
+- **Opnemen** met een ghost overlay: de allerlaatst gemaakte foto van die serie ligt
+  halftransparant over het live beeld, zodat je dezelfde compositie aanhoudt. De
+  dekking is instelbaar, ingedrukt houden haalt hem even weg, en bij de voorcamera
+  wordt hij gespiegeld getoond zodat hij op het gespiegelde beeld past.
+- **Galerij** per serie: de foto-van-de-dag, nieuwste boven, gegroepeerd per maand.
+  Overgeslagen dagen blijven onzichtbaar.
+- **Dagdetail** met alle foto's van één dag, waar je met een ster een andere foto tot
+  foto-van-de-dag maakt of teruggaat naar standaard.
+- **Verwijderen** met een prullenbak van 30 dagen en ongedaan maken.
+- **Bewerken**: roteren, rechtzetten en bijsnijden. Het origineel wordt nooit
+  overschreven.
+- **Importeren** uit je galerij met de systeem-fotokiezer, met slimme datumherkenning.
+- **Timelapse** met instelbare snelheid, beeldverhouding, resolutie, passing,
+  crossfade, datumstempel en muziek.
+- **Back-up** naar een map die je zelf kiest, met een wachtrij die achterstand
+  inhaalt, en herstellen uit die map als je toestel of installatie iets kwijtraakt.
 
-Zie `CHANGELOG.md` voor wat er per mijlpaal is opgeleverd.
+Zie `CHANGELOG.md` voor wat er per mijlpaal is opgeleverd en welke keuzes daarbij
+zijn gemaakt.
 
 ## Bouwen en installeren
 
@@ -103,10 +113,16 @@ installatie heen zetten.
 Pictures/Everyday/<serie>/
     <serie>_2026-09-11_074512.jpg          originelen, volledige cameraresolutie
     bewerkt/
-        <serie>_2026-09-11_074512.jpg      afgeleide na bijsnijden of roteren (M4)
+        <serie>_2026-09-11_074512.jpg      afgeleide na bijsnijden of roteren
 
 Movies/Everyday/
-    <serie>_timelapse_2026-09-11.mp4       (M6)
+    <serie>_timelapse_2026-09-11.mp4
+
+<backupmap, door jou gekozen>/
+    <serie>/<dezelfde bestandsnamen>
+    <serie>/bewerkt/<dezelfde bestandsnamen>
+    _verwijderd/<definitief opgeruimde foto's>
+    everyday-metadata.json
 ```
 
 Bestandsnamen zijn zelfbeschrijvend, sorteren chronologisch en veranderen na
@@ -122,10 +138,20 @@ lokaal te genereren is.
 
 ## Backupmap instellen
 
-Komt in M3. Je kiest dan één map via de systeemkiezer — interne opslag of
-SD-kaart — en de app kopieert daar elke nieuwe of gewijzigde foto naartoe, plus
-een `everyday-metadata.json` waarmee de hele administratie uit alleen die map
-terug te halen is.
+Ga naar **Instellingen → Back-up → Map kiezen** en wijs één map aan. Die mag op
+interne opslag of op een SD-kaart staan. Vanaf dat moment kopieert de app elke nieuwe
+of gewijzigde foto daarheen, plus een `everyday-metadata.json` met de hele
+administratie.
+
+Lukt een kopie niet — kaart eruit, map vol, toestemming ingetrokken — dan blijft het
+werk in een wachtrij staan en wordt het ingehaald bij de volgende appstart, zodra de
+app weer op de voorgrond komt, of zodra het volume opnieuw wordt aangekoppeld. Je
+wordt daar pas over lastiggevallen als de achterstand ouder is dan drie dagen.
+
+In `everyday-metadata.json` staat alles op mapnaam en bestandsnaam, nooit op
+database-id of uri. De backupmap is daardoor in zijn eentje genoeg: met
+**Instellingen → Herstellen uit backupmap** lees je series, foto's en dagkeuzes terug
+op een leeg toestel of na een de-installatie.
 
 ## Back-up van Google Foto's uitzetten voor deze map
 

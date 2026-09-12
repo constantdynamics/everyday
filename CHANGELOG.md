@@ -2,6 +2,25 @@
 
 Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
+## M7 — muziek, instellingen, opslaggebruik en afwerking
+
+**Opgeleverd**
+
+- **Muziek** onder de timelapse: je kiest een bestand van je eigen toestel via de
+  systeem-bestandskiezer (mp3, m4a, wav, flac — alles wat je toestel kan decoderen).
+  Het geluid wordt gedecodeerd naar PCM, op volume gezet, aan het eind uitgefaded over
+  anderhalve seconde, precies op de videolengte ingekort en opnieuw als AAC gecodeerd.
+  Daarna wordt het als tweede spoor in dezelfde mp4 gemuxed.
+- Volumeschuif voor de muziek, en de gekozen bestandsnaam blijft zichtbaar.
+- **De laatst gebruikte timelapse-instellingen worden per serie onthouden**, inclusief
+  het muziekbestand. Ze worden bewaard op het moment dat je rendert, niet bij elke
+  schuifbeweging.
+- **Opslaggebruik per serie** in Instellingen, met het pad erbij en een knop om
+  opnieuw te tellen. De telling gaat via MediaStore, dus inclusief bewerkte
+  afgeleiden en de timelapses van die serie.
+- Het instellingenscherm is daarmee compleet: backupmap en status, herstellen,
+  ghost-dekking, dagstart, thema, opslaggebruik en de informatieregel over de galerij.
+
 ## M6 — timelapse
 
 **Opgeleverd**
@@ -32,10 +51,6 @@ Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
   opnieuw maken met andere instellingen.
 - De timing van beelden, overgangen en afmetingen zit in `kern` en is door unit tests
   gedekt.
-
-**Nog niet in M6**
-
-Muziek, en het onthouden van de laatst gebruikte instellingen per serie; die komen in M7.
 
 ## M5 — importeren uit de galerij
 

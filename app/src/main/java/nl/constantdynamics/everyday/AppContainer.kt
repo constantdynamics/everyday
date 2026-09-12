@@ -19,6 +19,7 @@ import nl.constantdynamics.everyday.data.media.FotoLader
 import nl.constantdynamics.everyday.data.media.GhostCache
 import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.opslag.Instellingen
+import nl.constantdynamics.everyday.data.video.MuziekEncoder
 import nl.constantdynamics.everyday.data.video.TimelapseMaker
 
 /**
@@ -27,7 +28,7 @@ import nl.constantdynamics.everyday.data.video.TimelapseMaker
  */
 class AppContainer(context: Context) {
 
-    private val appContext = context.applicationContext
+    val appContext: Context = context.applicationContext
 
     /** Voor onderhoud dat losstaat van welk scherm dan ook. */
     val toepassingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -46,8 +47,10 @@ class AppContainer(context: Context) {
 
     val bewerker: Bewerker by lazy { Bewerker(fotoLader) }
 
+    val muziekEncoder: MuziekEncoder by lazy { MuziekEncoder(appContext) }
+
     val timelapseMaker: TimelapseMaker by lazy {
-        TimelapseMaker(appContext, fotoLader, mediaOpslag)
+        TimelapseMaker(appContext, fotoLader, mediaOpslag, muziekEncoder)
     }
 
     val instellingen: Instellingen by lazy { Instellingen(appContext) }

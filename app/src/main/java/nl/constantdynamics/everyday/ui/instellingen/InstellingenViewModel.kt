@@ -18,13 +18,19 @@ import nl.constantdynamics.everyday.AppContainer
 import nl.constantdynamics.everyday.data.backup.BackupBeheer
 import nl.constantdynamics.everyday.data.backup.BackupStatus
 import nl.constantdynamics.everyday.data.backup.HerstelBeheer
+import nl.constantdynamics.everyday.data.SerieRepository
+import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.opslag.Instellingen
 import nl.constantdynamics.everyday.data.opslag.Themakeuze
+
+data class SerieOpslag(val naam: String, val mapNaam: String, val bytes: Long)
 
 class InstellingenViewModel(
     private val instellingen: Instellingen,
     private val backupBeheer: BackupBeheer,
     private val herstelBeheer: HerstelBeheer,
+    private val serieRepository: SerieRepository,
+    private val mediaOpslag: MediaOpslag,
 ) : ViewModel() {
 
     val backupStatus: StateFlow<BackupStatus?> = backupBeheer.status
@@ -41,6 +47,28 @@ class InstellingenViewModel(
 
     var bezig by mutableStateOf(false)
         private set
+
+    /** Opslaggebruik per serie; wordt bij het openen van dit scherm opgehaald. */
+    var opslagPerSerie by mutableStateOf<List<SerieOpslag>?>(null)
+        private set
+
+    init {
+        vernieuwOpslaggebruik()
+    }
+
+    fun vernieuwOpslaggebruik() {
+        viewModelScope.launch {
+            opslagPerSerie = runCatching {
+                serieRepository.alleSeries().map { serie ->
+                    SerieOpslag(
+                        naam = serie.naam,
+                        mapNaam = serie.mapNaam,
+                        bytes = mediaOpslag.opslaggebruik(serie.mapNaam),
+                    )
+                }
+            }.getOrDefault(emptyList())
+        }
+    }
 
     private val _meldingen = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val meldingen = _meldingen.asSharedFlow()
@@ -114,6 +142,8 @@ class InstellingenViewModel(
                     instellingen = container.instellingen,
                     backupBeheer = container.backupBeheer,
                     herstelBeheer = container.herstelBeheer,
+                    serieRepository = container.serieRepository,
+                    mediaOpslag = container.mediaOpslag,
                 )
             }
         }

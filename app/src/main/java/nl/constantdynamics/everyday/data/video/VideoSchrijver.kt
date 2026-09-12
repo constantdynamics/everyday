@@ -28,6 +28,7 @@ class VideoSchrijver(
     private val hoogte: Int,
     private val fps: Int,
     bestandsBeschrijver: FileDescriptor,
+    private val muziek: GecodeerdeMuziek? = null,
 ) {
 
     private val codec: MediaCodec = MediaCodec.createEncoderByType(MIME)
@@ -36,6 +37,7 @@ class VideoSchrijver(
     private var invoerSurface: Surface? = null
     private var tekenaar: SurfaceTekenaar? = null
     private var spoor = -1
+    private var muziekSpoor = -1
     private var muxerLoopt = false
 
     fun start() {
@@ -88,8 +90,11 @@ class VideoSchrijver(
                 index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                     check(!muxerLoopt) { "Het videoformaat mag maar één keer veranderen" }
                     spoor = muxer.addTrack(codec.outputFormat)
+                    // Alle sporen moeten bekend zijn voordat de muxer start.
+                    muziek?.let { muziekSpoor = muxer.addTrack(it.formaat) }
                     muxer.start()
                     muxerLoopt = true
+                    schrijfMuziek()
                 }
                 index >= 0 -> {
                     val buffer = codec.getOutputBuffer(index)
@@ -104,6 +109,17 @@ class VideoSchrijver(
                     if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) return
                 }
             }
+        }
+    }
+
+    private fun schrijfMuziek() {
+        val spoorMuziek = muziek ?: return
+        if (muziekSpoor < 0) return
+        val info = MediaCodec.BufferInfo()
+        for (brok in spoorMuziek.brokken) {
+            val buffer = ByteBuffer.wrap(brok.gegevens)
+            info.set(0, brok.gegevens.size, brok.tijdMicros, brok.vlaggen)
+            runCatching { muxer.writeSampleData(muziekSpoor, buffer, info) }
         }
     }
 

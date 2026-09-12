@@ -2,6 +2,8 @@ package nl.constantdynamics.everyday.ui.timelapse
 
 import android.app.Activity
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -55,6 +57,8 @@ import nl.constantdynamics.everyday.ui.aantalFotos
 import nl.constantdynamics.everyday.ui.deelVideo
 import kotlin.math.roundToInt
 
+private val MUZIEK_SOORTEN = arrayOf("audio/*")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelapseScherm(
@@ -70,6 +74,10 @@ fun TimelapseScherm(
     val serie by viewModel.serie.collectAsStateWithLifecycle()
     val fotos by viewModel.fotos.collectAsStateWithLifecycle()
     val aantal = fotos?.size ?: 0
+
+    val muziekKiezer = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri -> if (uri != null) viewModel.kiesMuziek(uri) }
 
     HoudSchermAan(viewModel.stand is RenderStand.Bezig)
 
@@ -97,7 +105,10 @@ fun TimelapseScherm(
                 RenderStand.Instellen -> Instellen(
                     aantal = aantal,
                     instellingen = viewModel.instellingen,
+                    muziekNaam = viewModel.muziekNaam,
                     wijzig = viewModel::wijzig,
+                    kiesMuziek = { muziekKiezer.launch(MUZIEK_SOORTEN) },
+                    wisMuziek = viewModel::wisMuziek,
                     render = viewModel::render,
                 )
 
@@ -164,7 +175,10 @@ fun TimelapseScherm(
 private fun Instellen(
     aantal: Int,
     instellingen: TimelapseInstellingen,
+    muziekNaam: String?,
     wijzig: (TimelapseInstellingen) -> Unit,
+    kiesMuziek: () -> Unit,
+    wisMuziek: () -> Unit,
     render: () -> Unit,
 ) {
     var viaLengte by remember { mutableStateOf(false) }
@@ -331,6 +345,44 @@ private fun Instellen(
                 onValueChange = { wijzig(instellingen.copy(stempelGrootte = it)) },
                 valueRange = 0.5f..2f,
             )
+        }
+    }
+
+    Kop("Muziek")
+    Card {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = muziekNaam ?: "Geen muziek gekozen",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = "De muziek wordt automatisch ingekort op de lengte van de video, " +
+                    "met een fade-out van anderhalve seconde aan het eind.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = kiesMuziek) {
+                    Text(if (instellingen.muziekUri == null) "Bestand kiezen" else "Ander bestand")
+                }
+                if (instellingen.muziekUri != null) {
+                    OutlinedButton(onClick = wisMuziek) { Text("Verwijderen") }
+                }
+            }
+            if (instellingen.muziekUri != null) {
+                Text(
+                    text = "Volume: ${(instellingen.muziekVolume * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Slider(
+                    value = instellingen.muziekVolume,
+                    onValueChange = { wijzig(instellingen.copy(muziekVolume = it)) },
+                    valueRange = 0f..1f,
+                )
+            }
         }
     }
 

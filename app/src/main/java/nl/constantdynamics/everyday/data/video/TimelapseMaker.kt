@@ -29,6 +29,7 @@ class TimelapseMaker(
     private val context: Context,
     private val fotoLader: FotoLader,
     private val mediaOpslag: MediaOpslag,
+    private val muziekEncoder: MuziekEncoder,
 ) {
 
     suspend fun maak(
@@ -44,6 +45,17 @@ class TimelapseMaker(
         val totaalBeelden = aantalBeelden(fotos.size, instellingen)
         if (totaalBeelden <= 0) return@withContext null
 
+        // Eerst de muziek: die moet als spoor bekend zijn voordat de muxer start.
+        val muziek = instellingen.muziekUri?.let { tekst ->
+            voortgang(0f)
+            muziekEncoder.maakSpoor(
+                bronUri = Uri.parse(tekst),
+                duurMicros = totaalBeelden.toLong() * 1_000_000L / beeldenPerSeconde,
+                volume = instellingen.muziekVolume.coerceIn(0f, 1f),
+                fadeSeconden = FADE_SECONDEN,
+            )
+        }
+
         val doelUri = mediaOpslag.maakVideo(
             mediaOpslag.videoBestandsnaam(serie.mapNaam, LocalDate.now()),
         ) ?: return@withContext null
@@ -52,7 +64,13 @@ class TimelapseMaker(
         try {
             context.contentResolver.openFileDescriptor(doelUri, "rw").use { beschrijver ->
                 requireNotNull(beschrijver) { "De videopositie kon niet worden geopend" }
-                val schrijver = VideoSchrijver(breedte, hoogte, beeldenPerSeconde, beschrijver.fileDescriptor)
+                val schrijver = VideoSchrijver(
+                    breedte = breedte,
+                    hoogte = hoogte,
+                    fps = beeldenPerSeconde,
+                    bestandsBeschrijver = beschrijver.fileDescriptor,
+                    muziek = muziek,
+                )
                 val beeldMaker = BeeldMaker(breedte, hoogte, instellingen)
                 val voorraad = FotoVoorraad(fotoLader, maxOf(breedte, hoogte))
                 try {
@@ -135,5 +153,8 @@ class TimelapseMaker(
 
     private companion object {
         const val VOORTGANG_ELKE = 4
+
+        /** Zachtjes uitfaden aan het eind, zodat de muziek niet abrupt afbreekt. */
+        const val FADE_SECONDEN = 1.5f
     }
 }

@@ -19,8 +19,13 @@ import nl.constantdynamics.everyday.data.FotoRepository
 import nl.constantdynamics.everyday.data.SerieRepository
 import nl.constantdynamics.everyday.data.db.FotoEntiteit
 import nl.constantdynamics.everyday.data.db.SerieEntiteit
+import nl.constantdynamics.everyday.data.media.MediaOpslag
+import nl.constantdynamics.everyday.data.opslag.Instellingen
 import nl.constantdynamics.everyday.data.video.TimelapseMaker
 import nl.constantdynamics.everyday.kern.TimelapseInstellingen
+import android.content.Context
+import android.content.Intent
+import kotlinx.coroutines.flow.first
 
 sealed interface RenderStand {
     data object Instellen : RenderStand
@@ -34,6 +39,9 @@ class TimelapseViewModel(
     serieRepository: SerieRepository,
     fotoRepository: FotoRepository,
     private val timelapseMaker: TimelapseMaker,
+    private val instellingenOpslag: Instellingen,
+    private val mediaOpslag: MediaOpslag,
+    private val context: Context,
 ) : ViewModel() {
 
     val serie: StateFlow<SerieEntiteit?> = serieRepository.serie(serieId)
@@ -50,10 +58,53 @@ class TimelapseViewModel(
     var stand by mutableStateOf<RenderStand>(RenderStand.Instellen)
         private set
 
+    /** De naam van het gekozen muziekbestand, puur om te tonen. */
+    var muziekNaam by mutableStateOf<String?>(null)
+        private set
+
     private var renderTaak: Job? = null
+
+    init {
+        // De laatst gebruikte instellingen van deze serie overnemen.
+        viewModelScope.launch {
+            val bewaard = instellingenOpslag.timelapseInstellingen(serieId).first()
+            instellingen = bewaard
+            bewaard.muziekUri?.let { leesMuziekNaam(it) }
+        }
+    }
 
     fun wijzig(nieuw: TimelapseInstellingen) {
         instellingen = nieuw
+    }
+
+    fun kiesMuziek(uri: android.net.Uri) {
+        viewModelScope.launch {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            instellingen = instellingen.copy(muziekUri = uri.toString())
+            leesMuziekNaam(uri.toString())
+            bewaarInstellingen()
+        }
+    }
+
+    fun wisMuziek() {
+        instellingen = instellingen.copy(muziekUri = null)
+        muziekNaam = null
+        viewModelScope.launch { bewaarInstellingen() }
+    }
+
+    private suspend fun leesMuziekNaam(uri: String) {
+        muziekNaam = runCatching {
+            mediaOpslag.beschrijving(android.net.Uri.parse(uri))?.naam
+        }.getOrNull()
+    }
+
+    private suspend fun bewaarInstellingen() {
+        runCatching { instellingenOpslag.zetTimelapseInstellingen(serieId, instellingen) }
     }
 
     fun render() {
@@ -63,6 +114,7 @@ class TimelapseViewModel(
 
         stand = RenderStand.Bezig(0f)
         renderTaak = viewModelScope.launch {
+            bewaarInstellingen()
             val uitkomst = runCatching {
                 timelapseMaker.maak(serieNu, lijst, instellingen) { deel ->
                     stand = RenderStand.Bezig(deel)
@@ -97,6 +149,7 @@ class TimelapseViewModel(
         super.onCleared()
     }
 
+
     companion object {
         fun factory(container: AppContainer, serieId: Long) = viewModelFactory {
             initializer {
@@ -105,6 +158,9 @@ class TimelapseViewModel(
                     serieRepository = container.serieRepository,
                     fotoRepository = container.fotoRepository,
                     timelapseMaker = container.timelapseMaker,
+                    instellingenOpslag = container.instellingen,
+                    mediaOpslag = container.mediaOpslag,
+                    context = container.appContext,
                 )
             }
         }

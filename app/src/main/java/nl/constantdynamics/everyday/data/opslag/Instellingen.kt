@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import nl.constantdynamics.everyday.kern.TimelapseInstellingen
 import java.time.Instant
 
 enum class Themakeuze { LICHT, DONKER, SYSTEEM }
@@ -52,6 +53,18 @@ class Instellingen(private val context: Context) {
         context.instellingenStore.edit { it[SLEUTEL_GHOST_DEKKING] = dekking.coerceIn(0f, 1f) }
     }
 
+    /** De laatst gebruikte timelapse-instellingen van één serie. */
+    fun timelapseInstellingen(serieId: Long): Flow<TimelapseInstellingen> =
+        context.instellingenStore.data.map { voorkeuren ->
+            TimelapseOpslag.uitTekst(voorkeuren[timelapseSleutel(serieId)])
+        }
+
+    suspend fun zetTimelapseInstellingen(serieId: Long, instellingen: TimelapseInstellingen) {
+        context.instellingenStore.edit {
+            it[timelapseSleutel(serieId)] = TimelapseOpslag.naarTekst(instellingen)
+        }
+    }
+
     suspend fun huidigeBackupMapUri(): String? = backupMapUri.first()
 
     suspend fun zetBackupMapUri(uri: String?) {
@@ -74,5 +87,7 @@ class Instellingen(private val context: Context) {
         val SLEUTEL_THEMA = stringPreferencesKey("thema")
         val SLEUTEL_BACKUP_MAP = stringPreferencesKey("backup_map_uri")
         val SLEUTEL_LAATSTE_KOPIE = longPreferencesKey("laatste_geslaagde_kopie")
+
+        fun timelapseSleutel(serieId: Long) = stringPreferencesKey("timelapse_$serieId")
     }
 }

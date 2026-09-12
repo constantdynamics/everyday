@@ -43,6 +43,7 @@ import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.opslag.Themakeuze
 import nl.constantdynamics.everyday.ui.aantalFotos
 import nl.constantdynamics.everyday.ui.korteDatum
+import nl.constantdynamics.everyday.ui.leesbareGrootte
 import nl.constantdynamics.everyday.ui.tijdstip
 import kotlin.math.roundToInt
 
@@ -215,6 +216,50 @@ fun InstellingenScherm(
                                 )
                             },
                         )
+                    }
+                }
+            }
+
+            Kop("Opslaggebruik")
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    val gebruik = viewModel.opslagPerSerie
+                    when {
+                        gebruik == null -> Text(
+                            "Bezig met tellen…",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        gebruik.isEmpty() -> Text(
+                            "Nog geen series.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        else -> {
+                            gebruik.forEach { regel ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(regel.naam, style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                            text = "${MediaOpslag.HOOFDMAP_ZICHTBAAR}/${regel.mapNaam}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Text(
+                                        text = leesbareGrootte(regel.bytes),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                }
+                            }
+                            OutlinedButton(onClick = viewModel::vernieuwOpslaggebruik) {
+                                Text("Opnieuw tellen")
+                            }
+                        }
                     }
                 }
             }
