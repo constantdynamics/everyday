@@ -56,7 +56,16 @@ jobs:
       - name: Geëxporteerd Room-schema controleren en tonen
         run: |
           set -e
-          if [ ! -d app/schemas ] || [ -z "$(find app/schemas -name '*.json' -print -quit)" ]; then
+          schema_aanwezig() {
+            [ -d app/schemas ] && [ -n "$(find app/schemas -name '*.json' -print -quit)" ]
+          }
+          if ! schema_aanwezig; then
+            # Bij een build die grotendeels uit de cache komt draait KSP niet en
+            # wordt het schema niet opnieuw weggeschreven. Dan forceren we het.
+            echo "Geen schema na deze build; KSP wordt geforceerd opnieuw gedraaid."
+            ./gradlew --no-daemon assembleDebug --rerun-tasks
+          fi
+          if ! schema_aanwezig; then
             echo "FOUT: Room heeft geen schema geëxporteerd, terwijl exportSchema aanstaat."
             echo "Zonder geëxporteerd schema zijn latere migraties niet te controleren."
             exit 1
@@ -64,9 +73,16 @@ jobs:
           find app/schemas -name '*.json' | sort | while read -r bestand; do
             echo "===== $bestand ($(wc -c < "$bestand") bytes)"
             # Als één base64-regel, zodat het schema in zijn geheel uit de log te
-            # halen is; blob-opslag van artefacten is niet overal bereikbaar.
+            # halen is; de blob-opslag van artefacten is niet overal bereikbaar.
             echo "BASE64:$(base64 -w0 "$bestand")"
           done
+          if [ -n "$(git status --porcelain -- app/schemas)" ]; then
+            echo
+            echo "FOUT: het vastgelegde Room-schema loopt achter op wat de build oplevert."
+            echo "Leg het bijgewerkte schema vast in de repository:"
+            git status --short -- app/schemas
+            exit 1
+          fi
 
       - name: Room-schema bewaren
         if: always()
