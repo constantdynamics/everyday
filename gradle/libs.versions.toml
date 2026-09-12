@@ -1,19 +1,19 @@
-# Versies worden bewust vastgepind. De workflow "Bouw APK" drukt bij elke run de
-# nieuwste beschikbare versies af, zodat bijwerken een bewuste handeling blijft.
+# Versies worden bewust vastgepind. De workflow "Versiecheck" drukt op verzoek af
+# welke stabiele versies beschikbaar zijn, zodat bijwerken een bewuste keuze blijft.
 [versions]
-agp = "8.10.1"
-kotlin = "2.1.21"
-ksp = "2.1.21-2.0.2"
-coreKtx = "1.16.0"
-lifecycle = "2.9.0"
-activityCompose = "1.10.1"
-composeBom = "2025.05.01"
-navigation = "2.9.0"
-room = "2.7.1"
-camerax = "1.4.2"
-datastore = "1.1.7"
-exifinterface = "1.4.1"
-coroutines = "1.10.2"
+agp = "9.4.0"
+kotlin = "2.4.20"
+ksp = "2.3.12"
+coreKtx = "1.19.0"
+lifecycle = "2.11.0"
+activityCompose = "1.13.0"
+composeBom = "2026.09.00"
+navigation = "2.10.1"
+room = "2.8.5"
+camerax = "1.6.2"
+datastore = "1.2.1"
+exifinterface = "1.4.2"
+coroutines = "1.11.0"
 junit = "4.13.2"
 
 [libraries]

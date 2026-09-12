@@ -6,7 +6,7 @@ Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
 **Opgeleverd**
 
-- Android-project met Gradle Kotlin DSL, version catalog, `minSdk 34`, `targetSdk 36`.
+- Android-project met Gradle Kotlin DSL, version catalog, `minSdk 34`, `targetSdk 37`.
 - Series aanmaken met automatisch afgeleide, unieke mapnaam.
 - Startscherm met per serie een omslagfoto, het aantal foto's, de datum van de
   laatste foto en een directe cameraknop (foto maken in twee tikken).

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -11,12 +13,12 @@ val keystoreBestand: String? = System.getenv("EVERYDAY_KEYSTORE_FILE")
 
 android {
     namespace = "nl.constantdynamics.everyday"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "nl.constantdynamics.everyday"
         minSdk = 34
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
     }
@@ -41,7 +43,6 @@ android {
         }
         release {
             isMinifyEnabled = false
-            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
         }
@@ -62,7 +63,11 @@ android {
 }
 
 kotlin {
-    jvmToolchain(17)
+    // Geen toolchain-lookup: Gradle compileert met de JDK waarop hij zelf draait en
+    // richt de bytecode op 17, wat Android verwerkt.
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 ksp {

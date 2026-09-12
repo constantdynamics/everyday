@@ -16,43 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Beschikbare versies tonen
-        continue-on-error: true
-        run: |
-          toon_google() {
-            echo "--- $1"
-            curl -sL "https://dl.google.com/dl/android/maven2/$1/maven-metadata.xml" \
-              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | tail -6 | tr '\n' ' '
-            echo
-          }
-          toon_central() {
-            echo "--- $1"
-            curl -sL "https://repo1.maven.org/maven2/$1/maven-metadata.xml" \
-              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | tail -6 | tr '\n' ' '
-            echo
-          }
-          toon_google com/android/tools/build/gradle
-          toon_google androidx/compose/compose-bom
-          toon_google androidx/camera/camera-core
-          toon_google androidx/room/room-runtime
-          toon_google androidx/navigation/navigation-compose
-          toon_google androidx/lifecycle/lifecycle-runtime-compose
-          toon_google androidx/activity/activity-compose
-          toon_google androidx/datastore/datastore-preferences
-          toon_google androidx/exifinterface/exifinterface
-          toon_google androidx/core/core-ktx
-          toon_central org/jetbrains/kotlin/kotlin-gradle-plugin
-          toon_central com/google/devtools/ksp/symbol-processing-gradle-plugin
-          toon_central org/jetbrains/kotlinx/kotlinx-coroutines-android
-          echo "--- geïnstalleerde sdk-platforms"
-          ls "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/platforms" || true
-          echo "--- build-tools"
-          ls "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools" || true
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Gradle klaarzetten
         uses: gradle/actions/setup-gradle@v4
@@ -68,26 +35,13 @@ jobs:
             manifest=$(find app/build/intermediates -name AndroidManifest.xml -path '*debug*' | head -1)
           fi
           echo "Manifest: $manifest"
-          cat "$manifest"
-          echo "----"
-          if grep -qE 'android\.permission\.(INTERNET|POST_NOTIFICATIONS|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION)' "$manifest"; then
-            echo "FOUT: de samengevoegde manifest bevat een verboden permissie."
+          if grep -qE 'android\.permission\.(INTERNET|POST_NOTIFICATIONS|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|ACCESS_NETWORK_STATE)' "$manifest"; then
+            echo "FOUT: de samengevoegde manifest bevat een verboden permissie:"
+            grep -E 'uses-permission' "$manifest"
             exit 1
           fi
-          echo "OK: geen netwerk-, meldingen- of locatiepermissie aanwezig."
-
-      - name: Geëxporteerd Room-schema tonen
-        if: always()
-        run: |
-          if [ -d app/schemas ]; then
-            find app/schemas -name '*.json' | sort | while read -r bestand; do
-              echo "===== $bestand"
-              cat "$bestand"
-              echo
-            done
-          else
-            echo "Nog geen geëxporteerd schema gevonden."
-          fi
+          echo "OK: alleen deze permissies staan erin:"
+          grep -E 'uses-permission' "$manifest" || echo "(geen)"
 
       - name: Unit tests
         run: ./gradlew --no-daemon testDebugUnitTest
@@ -98,6 +52,28 @@ jobs:
           name: everyday-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Geëxporteerd Room-schema controleren en tonen
+        run: |
+          set -e
+          if [ ! -d app/schemas ] || [ -z "$(find app/schemas -name '*.json' -print -quit)" ]; then
+            echo "FOUT: Room heeft geen schema geëxporteerd, terwijl exportSchema aanstaat."
+            echo "Zonder geëxporteerd schema zijn latere migraties niet te controleren."
+            exit 1
+          fi
+          find app/schemas -name '*.json' | sort | while read -r bestand; do
+            echo "===== $bestand"
+            cat "$bestand"
+            echo
+          done
+
+      - name: Room-schema bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: everyday-room-schema
+          path: app/schemas/**/*.json
+          if-no-files-found: warn
 
   release:
     name: Ondertekende release-APK
@@ -126,7 +102,7 @@ jobs:
         if: steps.keystore.outputs.aanwezig == 'ja'
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Gradle klaarzetten
         if: steps.keystore.outputs.aanwezig == 'ja'
