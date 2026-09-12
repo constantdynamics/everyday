@@ -6,7 +6,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # Nodig omdat de build het geëxporteerde Room-schema zelf vastlegt: dat kan hier
+  # niet lokaal worden gegenereerd, en zonder vastgelegd schema zijn latere
+  # migraties niet te controleren.
+  contents: write
 
 jobs:
   bouw:
@@ -61,9 +64,7 @@ jobs:
           path: app/schemas/**/*.json
           if-no-files-found: warn
 
-      # Als laatste stap, zodat de uitvoer onderaan de log staat en het schema
-      # daar in zijn geheel uit te halen is.
-      - name: Geëxporteerd Room-schema controleren en tonen
+      - name: Geëxporteerd Room-schema controleren
         run: |
           set -e
           schema_aanwezig() {
@@ -80,19 +81,23 @@ jobs:
             echo "Zonder geëxporteerd schema zijn latere migraties niet te controleren."
             exit 1
           fi
-          # Alleen letten op schema's die al zijn vastgelegd: wijkt het vastgelegde
-          # schema af van wat de build oplevert, dan is er iets niet bijgewerkt.
-          if [ -n "$(git status --porcelain --untracked-files=no -- app/schemas)" ]; then
-            echo "FOUT: het vastgelegde Room-schema loopt achter op wat de build oplevert."
-            git status --short -- app/schemas
-            exit 1
+          find app/schemas -name '*.json' -printf '%p (%s bytes)\n' | sort
+
+      - name: Room-schema vastleggen als het is gewijzigd
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          if [ -z "$(git status --porcelain -- app/schemas)" ]; then
+            echo "Het vastgelegde schema loopt gelijk met de build."
+            exit 0
           fi
-          find app/schemas -name '*.json' | sort | while read -r bestand; do
-            echo "SCHEMA $bestand ($(wc -c < "$bestand") bytes)"
-            # Als één base64-regel, zodat het schema in zijn geheel uit de log te
-            # halen is; de blob-opslag van artefacten is niet overal bereikbaar.
-            echo "BASE64:$(base64 -w0 "$bestand")"
-          done
+          echo "Het schema is gewijzigd; wordt vastgelegd:"
+          git status --short -- app/schemas
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/schemas
+          git commit -m "Room-schema vastleggen zoals de build het exporteert [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
   release:
     name: Ondertekende release-APK
