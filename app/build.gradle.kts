@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
@@ -48,6 +45,9 @@ android {
         }
     }
 
+    // AGP 9 heeft ingebouwde Kotlin-ondersteuning; de losse kotlin-android-plugin
+    // hoort hier niet meer bij. De Kotlin-bytecode volgt automatisch de doelversie
+    // hieronder, dus die hoeft niet apart te worden ingesteld.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -59,14 +59,6 @@ android {
 
     lint {
         abortOnError = false
-    }
-}
-
-kotlin {
-    // Geen toolchain-lookup: Gradle compileert met de JDK waarop hij zelf draait en
-    // richt de bytecode op 17, wat Android verwerkt.
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
