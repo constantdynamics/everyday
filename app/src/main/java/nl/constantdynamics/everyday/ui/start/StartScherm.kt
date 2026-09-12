@@ -1,5 +1,6 @@
 package nl.constantdynamics.everyday.ui.start
 
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,12 +16,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -38,13 +43,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.constantdynamics.everyday.AppContainer
+import nl.constantdynamics.everyday.data.backup.BackupStatus
 import nl.constantdynamics.everyday.data.db.SerieOverzichtRij
 import nl.constantdynamics.everyday.ui.aantalFotos
 import nl.constantdynamics.everyday.ui.korteDatum
 import nl.constantdynamics.everyday.ui.onderdelen.FotoBeeld
 import nl.constantdynamics.everyday.ui.onderdelen.LegeStaat
 import nl.constantdynamics.everyday.ui.onderdelen.NaamDialoog
-import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,43 +57,58 @@ fun StartScherm(
     container: AppContainer,
     naarOpname: (Long) -> Unit,
     naarGalerij: (Long) -> Unit,
+    naarInstellingen: () -> Unit,
 ) {
     val viewModel: StartViewModel = viewModel(factory = StartViewModel.factory(container))
     val series by viewModel.series.collectAsStateWithLifecycle()
+    val backupStatus by viewModel.backupStatus.collectAsStateWithLifecycle()
     var toonNieuweSerie by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("everyday") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("everyday") },
+                actions = {
+                    IconButton(onClick = naarInstellingen) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Instellingen")
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = { toonNieuweSerie = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Nieuwe serie")
             }
         },
     ) { ruimte ->
-        val rijen = series
-        when {
-            rijen == null -> Box(Modifier.fillMaxSize().padding(ruimte))
-            rijen.isEmpty() -> LegeStaat(
-                titel = "Nog geen series",
-                uitleg = "Maak een serie aan voor het onderwerp dat je elke dag fotografeert.",
-                modifier = Modifier.fillMaxSize().padding(ruimte),
-            )
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = ruimte.calculateTopPadding() + 8.dp,
-                    bottom = ruimte.calculateBottomPadding() + 88.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(rijen, key = { it.serie.id }) { rij ->
-                    SerieKaart(
-                        rij = rij,
-                        openGalerij = { naarGalerij(rij.serie.id) },
-                        openCamera = { naarOpname(rij.serie.id) },
-                    )
+        Column(modifier = Modifier.fillMaxSize().padding(top = ruimte.calculateTopPadding())) {
+            BackupWaarschuwing(status = backupStatus, openInstellingen = naarInstellingen)
+
+            val rijen = series
+            when {
+                rijen == null -> Box(Modifier.fillMaxSize())
+                rijen.isEmpty() -> LegeStaat(
+                    titel = "Nog geen series",
+                    uitleg = "Maak een serie aan voor het onderwerp dat je elke dag fotografeert.",
+                    modifier = Modifier.fillMaxSize(),
+                )
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = 8.dp,
+                        bottom = ruimte.calculateBottomPadding() + 88.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(rijen, key = { it.serie.id }) { rij ->
+                        SerieKaart(
+                            rij = rij,
+                            openGalerij = { naarGalerij(rij.serie.id) },
+                            openCamera = { naarOpname(rij.serie.id) },
+                        )
+                    }
                 }
             }
         }
@@ -106,6 +126,36 @@ fun StartScherm(
                 viewModel.maakSerie(naam) { nieuweId -> naarOpname(nieuweId) }
             },
         )
+    }
+}
+
+/**
+ * Alleen zichtbaar als de achterstand echt aandacht verdient. Een losgekoppelde
+ * SD-kaart van een uurtje hoort je niet lastig te vallen.
+ */
+@Composable
+private fun BackupWaarschuwing(status: BackupStatus?, openInstellingen: () -> Unit) {
+    if (status == null || !status.verdientAandacht()) return
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable(onClick = openInstellingen),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(Icons.Filled.CloudOff, contentDescription = null)
+            Text(
+                text = "Back-up loopt achter: ${aantalFotos(status.aantalInWachtrij)} wachten op de backupmap.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }
 

@@ -13,6 +13,7 @@ room = "2.8.5"
 camerax = "1.6.2"
 datastore = "1.2.1"
 exifinterface = "1.4.2"
+documentfile = "1.1.0"
 coroutines = "1.11.0"
 junit = "4.13.2"
 
@@ -44,6 +45,7 @@ androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "
 
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 

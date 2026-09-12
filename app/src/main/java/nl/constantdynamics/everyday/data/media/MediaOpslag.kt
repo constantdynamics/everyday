@@ -47,6 +47,50 @@ class MediaOpslag(private val context: Context) {
     }
 
     /**
+     * Schrijft zelf een JPG weg naar de seriemap. Wordt gebruikt bij importeren, bij
+     * het bewaren van een bewerkte afgeleide en bij herstellen uit de backupmap.
+     */
+    suspend fun schrijfJpeg(
+        mapNaam: String,
+        bestandsnaam: String,
+        moment: Instant,
+        submap: String? = null,
+        schrijf: suspend (java.io.OutputStream) -> Unit,
+    ): Uri? = withContext(Dispatchers.IO) {
+        val pad = if (submap == null) relatiefPad(mapNaam) else relatiefPad(mapNaam) + "/" + submap
+        val waarden = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, bestandsnaam)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.RELATIVE_PATH, pad)
+            put(MediaStore.Images.Media.DATE_TAKEN, moment.toEpochMilli())
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+        val collectie = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val uri = runCatching { resolver.insert(collectie, waarden) }.getOrNull()
+            ?: return@withContext null
+        val gelukt = runCatching {
+            resolver.openOutputStream(uri).use { stroom ->
+                requireNotNull(stroom)
+                schrijf(stroom)
+            }
+            true
+        }.getOrDefault(false)
+        if (!gelukt) {
+            runCatching { resolver.delete(uri, null, null) }
+            return@withContext null
+        }
+        runCatching {
+            resolver.update(
+                uri,
+                ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) },
+                null,
+                null,
+            )
+        }
+        uri
+    }
+
+    /**
      * MediaStore kan een naam aanpassen bij botsing, dus we lezen terug hoe het
      * bestand daadwerkelijk heet in plaats van aan te nemen wat we hebben gevraagd.
      */
@@ -120,6 +164,9 @@ class MediaOpslag(private val context: Context) {
 
     companion object {
         const val HOOFDMAP = "Everyday"
+
+        /** Zoals het pad er voor jou uitziet in een bestandsbeheerder. */
+        const val HOOFDMAP_ZICHTBAAR = "Pictures/$HOOFDMAP"
 
         private val BESTANDSNAAM_OPMAAK: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss")

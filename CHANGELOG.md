@@ -2,6 +2,36 @@
 
 Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
+## M3 — backupmap, kopieerwachtrij, metadata en herstellen
+
+**Opgeleverd**
+
+- **Backupmap** kiezen via de systeemkiezer, met blijvende toestemming. De map mag
+  op interne opslag of op een SD-kaart staan.
+- Na elke opname wordt het bestand automatisch naar de backupmap gekopieerd, in
+  dezelfde mapstructuur: `<backupmap>/<serie>/<bestandsnaam>`.
+- **Kopieerwachtrij** in de database: een mislukte kopie kost nooit een foto en
+  houdt de app nergens op. De wachtrij wordt afgewerkt bij het starten van de app,
+  telkens als de app weer op de voorgrond komt, en zodra een losgekoppeld volume
+  opnieuw wordt aangekoppeld.
+- Lukt er in een hele ronde niets, dan stopt het inlopen en wordt het bij de
+  volgende gelegenheid opnieuw geprobeerd — geen eindeloos doorpogen.
+- **`everyday-metadata.json`** naast de foto's, met series, foto's en dagkeuzes.
+  Alles verwijst naar mapnamen en bestandsnamen, nooit naar database-ids of uri's,
+  zodat de backupmap in zijn eentje genoeg is.
+- **Herstellen uit de backupmap**: leest de metadata terug, zet ontbrekende series
+  en foto's weer in de app en kopieert de bestanden terug. Dit is het vangnet na
+  een de-installatie of een toestelwissel.
+- **Instellingenscherm** met de backupstatus (laatste geslaagde kopie, aantal in de
+  wachtrij, oudste wachtende), knoppen "Alles opnieuw kopiëren" en "Herstellen uit
+  backupmap", de standaarddekking van de ghost overlay, de dagstart, de themakeuze
+  en de nuchtere regel over de galerij en Google Foto's.
+- Op het startscherm verschijnt pas een melding als de achterstand ouder is dan
+  drie dagen. Een SD-kaart die er even uit is, valt je dus niet lastig.
+- Definitief opgeruimde foto's worden in de backupmap naar `_verwijderd/`
+  verplaatst in plaats van gewist.
+- Databaseversie 2 met migratie voor de kopieerwachtrij.
+
 ## M2 — ghost overlay, dagdetail, foto-van-de-dag, verwijderen
 
 **Opgeleverd**

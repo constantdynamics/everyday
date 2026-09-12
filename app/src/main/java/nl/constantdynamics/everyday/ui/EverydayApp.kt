@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import nl.constantdynamics.everyday.AppContainer
 import nl.constantdynamics.everyday.ui.dag.DagScherm
 import nl.constantdynamics.everyday.ui.galerij.GalerijScherm
+import nl.constantdynamics.everyday.ui.instellingen.InstellingenScherm
 import nl.constantdynamics.everyday.ui.opname.OpnameScherm
 import nl.constantdynamics.everyday.ui.start.StartScherm
 import java.time.LocalDate
@@ -20,6 +21,7 @@ object Routes {
     const val OPNAME = "serie/{$SERIE_ID}/opname"
     const val GALERIJ = "serie/{$SERIE_ID}/galerij"
     const val DAGDETAIL = "serie/{$SERIE_ID}/dag/{$DAG}"
+    const val INSTELLINGEN = "instellingen"
 
     fun opname(serieId: Long) = "serie/$serieId/opname"
     fun galerij(serieId: Long) = "serie/$serieId/galerij"
@@ -36,6 +38,13 @@ fun EverydayApp(container: AppContainer) {
                 container = container,
                 naarOpname = { navController.navigate(Routes.opname(it)) },
                 naarGalerij = { navController.navigate(Routes.galerij(it)) },
+                naarInstellingen = { navController.navigate(Routes.INSTELLINGEN) },
+            )
+        }
+        composable(Routes.INSTELLINGEN) {
+            InstellingenScherm(
+                container = container,
+                terug = { navController.popBackStack() },
             )
         }
         composable(

@@ -3,6 +3,7 @@ package nl.constantdynamics.everyday.data.db
 import androidx.room.Dao
 import androidx.room.Embedded
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import androidx.room.Upsert
@@ -47,8 +48,14 @@ interface SerieDao {
     @Query("SELECT EXISTS(SELECT 1 FROM serie WHERE mapNaam = :mapNaam)")
     suspend fun mapNaamBestaat(mapNaam: String): Boolean
 
+    @Query("SELECT * FROM serie WHERE mapNaam = :mapNaam LIMIT 1")
+    suspend fun serieOpMapNaam(mapNaam: String): SerieEntiteit?
+
     @Query("SELECT COALESCE(MAX(volgorde), -1) + 1 FROM serie")
     suspend fun volgendeVolgorde(): Int
+
+    @Query("SELECT * FROM serie")
+    suspend fun alles(): List<SerieEntiteit>
 
     @Insert
     suspend fun voegToe(serie: SerieEntiteit): Long
@@ -68,6 +75,25 @@ interface FotoDao {
 
     @Query("SELECT * FROM foto WHERE id = :fotoId")
     suspend fun fotoEenmalig(fotoId: Long): FotoEntiteit?
+
+    @Query("SELECT * FROM foto")
+    suspend fun alles(): List<FotoEntiteit>
+
+    @Query("SELECT * FROM foto WHERE serieId = :serieId AND verwijderdOp IS NULL")
+    suspend fun alleVanSerie(serieId: Long): List<FotoEntiteit>
+
+    @Query("SELECT * FROM foto WHERE serieId = :serieId AND bestandsnaam = :bestandsnaam LIMIT 1")
+    suspend fun fotoOpBestandsnaam(serieId: Long, bestandsnaam: String): FotoEntiteit?
+
+    /** Voor het herkennen van dubbelen bij importeren: zelfde tijdstip en zelfde grootte. */
+    @Query(
+        """
+        SELECT * FROM foto
+        WHERE serieId = :serieId AND gemaaktOp = :moment AND breedte = :breedte AND hoogte = :hoogte
+        LIMIT 1
+        """
+    )
+    suspend fun zoekDubbele(serieId: Long, moment: Instant, breedte: Int, hoogte: Int): FotoEntiteit?
 
     /** De allerlaatst gemaakte foto van een serie: de bron voor de ghost overlay. */
     @Query(
@@ -129,6 +155,32 @@ interface FotoDao {
 }
 
 @Dao
+interface BackupTaakDao {
+
+    /** Dezelfde bron twee keer in de wachtrij zetten heeft geen zin. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun voegToe(taak: BackupTaakEntiteit): Long
+
+    @Query("SELECT * FROM backuptaak ORDER BY aangemaaktOp ASC, id ASC LIMIT :maximaal")
+    suspend fun wachtrij(maximaal: Int): List<BackupTaakEntiteit>
+
+    @Query("DELETE FROM backuptaak WHERE id = :taakId")
+    suspend fun verwijder(taakId: Long)
+
+    @Query("UPDATE backuptaak SET pogingen = pogingen + 1 WHERE id = :taakId")
+    suspend fun tekPoging(taakId: Long)
+
+    @Query("SELECT COUNT(*) FROM backuptaak")
+    fun aantalInWachtrij(): Flow<Int>
+
+    @Query("SELECT MIN(aangemaaktOp) FROM backuptaak")
+    fun oudsteInWachtrij(): Flow<Instant?>
+
+    @Query("DELETE FROM backuptaak")
+    suspend fun leeg()
+}
+
+@Dao
 interface DagKeuzeDao {
 
     @Upsert
@@ -143,4 +195,7 @@ interface DagKeuzeDao {
 
     @Query("SELECT fotoId FROM dagkeuze WHERE serieId = :serieId AND dagSleutel = :dag")
     fun gekozenFotoId(serieId: Long, dag: LocalDate): Flow<Long?>
+
+    @Query("SELECT * FROM dagkeuze")
+    suspend fun alles(): List<DagKeuzeEntiteit>
 }

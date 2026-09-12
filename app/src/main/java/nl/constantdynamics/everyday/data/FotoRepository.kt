@@ -7,6 +7,8 @@ import nl.constantdynamics.everyday.data.db.DagKeuzeEntiteit
 import nl.constantdynamics.everyday.data.db.FotoDao
 import nl.constantdynamics.everyday.data.db.FotoEntiteit
 import nl.constantdynamics.everyday.data.db.SerieEntiteit
+import nl.constantdynamics.everyday.data.backup.BackupBeheer
+import nl.constantdynamics.everyday.data.backup.BackupOpslag
 import nl.constantdynamics.everyday.data.media.GhostCache
 import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.opslag.Instellingen
@@ -22,6 +24,9 @@ class FotoRepository(
     private val mediaOpslag: MediaOpslag,
     private val instellingen: Instellingen,
     private val ghostCache: GhostCache,
+    private val serieDao: nl.constantdynamics.everyday.data.db.SerieDao,
+    private val backupBeheer: BackupBeheer,
+    private val backupOpslag: BackupOpslag,
 ) {
 
     fun fotosVanDeDag(serieId: Long): Flow<List<FotoEntiteit>> = fotoDao.fotosVanDeDag(serieId)
@@ -57,6 +62,9 @@ class FotoRepository(
         )
         // Vast klaarzetten voor de ghost overlay van de volgende opname.
         ghostCache.ghost(id, uri, GHOST_ORIGINEEL)
+        // De kopie naar de backupmap mag mislukken; dan blijft hij in de wachtrij staan.
+        backupBeheer.zetInWachtrij(serie.mapNaam, bestandsnaam, uri.toString())
+        backupBeheer.verwerkWachtrij()
         return id
     }
 
@@ -86,6 +94,11 @@ class FotoRepository(
     suspend fun ruimPrullenbakOp(bewaartermijn: Duration = STANDAARD_BEWAARTERMIJN) {
         val grens = Instant.now().minus(bewaartermijn)
         for (foto in fotoDao.verlopenInPrullenbak(grens)) {
+            // In de backupmap wordt de kopie niet gewist maar verplaatst: een backup
+            // die zelf dingen weggooit is geen backup.
+            serieDao.serieEenmalig(foto.serieId)?.let { serie ->
+                backupOpslag.verplaatsNaarVerwijderd(serie.mapNaam, foto.bestandsnaam)
+            }
             mediaOpslag.verwijderBestand(Uri.parse(foto.origineelUri))
             foto.bewerktUri?.let { mediaOpslag.verwijderBestand(Uri.parse(it)) }
             dagKeuzeDao.wisVoorFoto(foto.id)

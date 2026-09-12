@@ -8,6 +8,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import nl.constantdynamics.everyday.data.FotoRepository
 import nl.constantdynamics.everyday.data.SerieRepository
+import nl.constantdynamics.everyday.data.backup.BackupBeheer
+import nl.constantdynamics.everyday.data.backup.BackupOpslag
+import nl.constantdynamics.everyday.data.backup.HerstelBeheer
+import nl.constantdynamics.everyday.data.db.ALLE_MIGRATIES
 import nl.constantdynamics.everyday.data.db.EverydayDatabase
 import nl.constantdynamics.everyday.data.media.FotoLader
 import nl.constantdynamics.everyday.data.media.GhostCache
@@ -26,7 +30,9 @@ class AppContainer(context: Context) {
     val toepassingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     val database: EverydayDatabase by lazy {
-        Room.databaseBuilder(appContext, EverydayDatabase::class.java, "everyday.db").build()
+        Room.databaseBuilder(appContext, EverydayDatabase::class.java, "everyday.db")
+            .addMigrations(*ALLE_MIGRATIES)
+            .build()
     }
 
     val mediaOpslag: MediaOpslag by lazy { MediaOpslag(appContext) }
@@ -37,6 +43,31 @@ class AppContainer(context: Context) {
 
     val instellingen: Instellingen by lazy { Instellingen(appContext) }
 
+    val backupOpslag: BackupOpslag by lazy { BackupOpslag(appContext, instellingen) }
+
+    val backupBeheer: BackupBeheer by lazy {
+        BackupBeheer(
+            backupTaakDao = database.backupTaakDao(),
+            serieDao = database.serieDao(),
+            fotoDao = database.fotoDao(),
+            dagKeuzeDao = database.dagKeuzeDao(),
+            backupOpslag = backupOpslag,
+            instellingen = instellingen,
+            scope = toepassingsScope,
+        )
+    }
+
+    val herstelBeheer: HerstelBeheer by lazy {
+        HerstelBeheer(
+            context = appContext,
+            serieDao = database.serieDao(),
+            fotoDao = database.fotoDao(),
+            dagKeuzeDao = database.dagKeuzeDao(),
+            backupOpslag = backupOpslag,
+            mediaOpslag = mediaOpslag,
+        )
+    }
+
     val serieRepository: SerieRepository by lazy { SerieRepository(database.serieDao()) }
 
     val fotoRepository: FotoRepository by lazy {
@@ -46,6 +77,9 @@ class AppContainer(context: Context) {
             mediaOpslag = mediaOpslag,
             instellingen = instellingen,
             ghostCache = ghostCache,
+            serieDao = database.serieDao(),
+            backupBeheer = backupBeheer,
+            backupOpslag = backupOpslag,
         )
     }
 
@@ -54,5 +88,6 @@ class AppContainer(context: Context) {
         toepassingsScope.launch {
             runCatching { fotoRepository.ruimPrullenbakOp() }
         }
+        backupBeheer.verwerkWachtrij()
     }
 }

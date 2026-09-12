@@ -6,11 +6,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 
 enum class Themakeuze { LICHT, DONKER, SYSTEEM }
 
@@ -25,6 +27,15 @@ class Instellingen(private val context: Context) {
     /** Standaarddekking van de ghost overlay, 0f..1f. */
     val ghostDekking: Flow<Float> =
         context.instellingenStore.data.map { it[SLEUTEL_GHOST_DEKKING] ?: 0.4f }
+
+    /** De door jou gekozen backupmap, als SAF-uri. */
+    val backupMapUri: Flow<String?> =
+        context.instellingenStore.data.map { it[SLEUTEL_BACKUP_MAP] }
+
+    /** Wanneer er voor het laatst iets met succes is gekopieerd. */
+    val laatsteGeslaagdeKopie: Flow<Instant?> = context.instellingenStore.data.map { voorkeuren ->
+        voorkeuren[SLEUTEL_LAATSTE_KOPIE]?.let(Instant::ofEpochMilli)
+    }
 
     val thema: Flow<Themakeuze> = context.instellingenStore.data.map { voorkeuren ->
         voorkeuren[SLEUTEL_THEMA]?.let { runCatching { Themakeuze.valueOf(it) }.getOrNull() }
@@ -41,6 +52,18 @@ class Instellingen(private val context: Context) {
         context.instellingenStore.edit { it[SLEUTEL_GHOST_DEKKING] = dekking.coerceIn(0f, 1f) }
     }
 
+    suspend fun huidigeBackupMapUri(): String? = backupMapUri.first()
+
+    suspend fun zetBackupMapUri(uri: String?) {
+        context.instellingenStore.edit { voorkeuren ->
+            if (uri == null) voorkeuren.remove(SLEUTEL_BACKUP_MAP) else voorkeuren[SLEUTEL_BACKUP_MAP] = uri
+        }
+    }
+
+    suspend fun zetLaatsteGeslaagdeKopie(moment: Instant) {
+        context.instellingenStore.edit { it[SLEUTEL_LAATSTE_KOPIE] = moment.toEpochMilli() }
+    }
+
     suspend fun zetThema(keuze: Themakeuze) {
         context.instellingenStore.edit { it[SLEUTEL_THEMA] = keuze.name }
     }
@@ -49,5 +72,7 @@ class Instellingen(private val context: Context) {
         val SLEUTEL_DAG_START_UUR = intPreferencesKey("dag_start_uur")
         val SLEUTEL_GHOST_DEKKING = floatPreferencesKey("ghost_dekking")
         val SLEUTEL_THEMA = stringPreferencesKey("thema")
+        val SLEUTEL_BACKUP_MAP = stringPreferencesKey("backup_map_uri")
+        val SLEUTEL_LAATSTE_KOPIE = longPreferencesKey("laatste_geslaagde_kopie")
     }
 }

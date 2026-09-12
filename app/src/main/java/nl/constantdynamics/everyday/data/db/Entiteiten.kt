@@ -78,3 +78,23 @@ data class DagKeuzeEntiteit(
     val dagSleutel: LocalDate,
     val fotoId: Long,
 )
+
+/**
+ * Eén nog uit te voeren kopie naar de backupmap. Een mislukte kopie blijft staan en
+ * wordt opnieuw geprobeerd; een foto gaat er dus nooit door verloren en de app
+ * wacht nergens op.
+ */
+@Entity(
+    tableName = "backuptaak",
+    indices = [Index(value = ["bronUri"], unique = true)],
+)
+data class BackupTaakEntiteit(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val serieMapNaam: String,
+    val bestandsnaam: String,
+    val bronUri: String,
+    /** Leeg voor originelen, "bewerkt" voor een gerenderde afgeleide. */
+    val submap: String? = null,
+    val aangemaaktOp: Instant,
+    val pogingen: Int = 0,
+)
