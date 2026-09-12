@@ -76,6 +76,19 @@ jobs:
           fi
           echo "OK: geen netwerk-, meldingen- of locatiepermissie aanwezig."
 
+      - name: Geëxporteerd Room-schema tonen
+        if: always()
+        run: |
+          if [ -d app/schemas ]; then
+            find app/schemas -name '*.json' | sort | while read -r bestand; do
+              echo "===== $bestand"
+              cat "$bestand"
+              echo
+            done
+          else
+            echo "Nog geen geëxporteerd schema gevonden."
+          fi
+
       - name: Unit tests
         run: ./gradlew --no-daemon testDebugUnitTest
 
