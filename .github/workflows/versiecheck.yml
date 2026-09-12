@@ -1,8 +1,7 @@
 name: Versiecheck
 
-# Draait alleen op verzoek. Drukt af welke versies van de gebruikte onderdelen
-# beschikbaar zijn, zodat bijwerken een bewuste handeling blijft in plaats van
-# een automatische.
+# Draait alleen op verzoek. Drukt af welke stabiele versies van de gebruikte
+# onderdelen beschikbaar zijn, zodat bijwerken een bewuste handeling blijft.
 on:
   workflow_dispatch:
 
@@ -14,15 +13,14 @@ jobs:
     name: Beschikbare versies
     runs-on: ubuntu-latest
     steps:
-      - name: Google Maven en Maven Central
+      - name: Stabiele en nieuwste versies
         run: |
           toon() {
-            printf '%-52s' "$2"
-            curl -sL "$1/$2/maven-metadata.xml" \
-              | grep -o '<latest>[^<]*</latest>\|<release>[^<]*</release>' | sed 's/<[^>]*>//g' | tr '\n' ' '
-            curl -sL "$1/$2/maven-metadata.xml" \
-              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | tail -4 | tr '\n' ' '
-            echo
+            versies=$(curl -sL "$1/$2/maven-metadata.xml" \
+              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g')
+            stabiel=$(echo "$versies" | grep -viE 'alpha|beta|rc|-dev|-M[0-9]|snapshot' | tail -3 | tr '\n' ' ')
+            nieuwste=$(echo "$versies" | tail -1)
+            printf '%-46s stabiel: %-34s nieuwste: %s\n' "$(basename "$2")" "$stabiel" "$nieuwste"
           }
           G=https://dl.google.com/dl/android/maven2
           C=https://repo1.maven.org/maven2
@@ -30,7 +28,7 @@ jobs:
                    androidx/room/room-runtime androidx/navigation/navigation-compose \
                    androidx/lifecycle/lifecycle-runtime-compose androidx/activity/activity-compose \
                    androidx/datastore/datastore-preferences androidx/exifinterface/exifinterface \
-                   androidx/core/core-ktx androidx/media3/media3-transformer; do
+                   androidx/core/core-ktx androidx/compose/material3/material3; do
             toon "$G" "$a"
           done
           for a in org/jetbrains/kotlin/kotlin-gradle-plugin \
@@ -42,10 +40,7 @@ jobs:
       - name: Android SDK op de runner
         run: |
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          echo "platforms:"; ls "$SDK/platforms" 2>/dev/null | sort -V | tr '\n' ' '; echo
-          echo "build-tools:"; ls "$SDK/build-tools" 2>/dev/null | sort -V | tr '\n' ' '; echo
-          echo "beschikbare platforms volgens sdkmanager:"
-          "$SDK"/cmdline-tools/latest/bin/sdkmanager --list 2>/dev/null \
-            | grep -E '^\s+platforms;android-[0-9]+\s' | awk '{print $1}' | sort -V | tail -8 | tr '\n' ' '
-          echo
-          echo "gradle: $(gradle --version 2>/dev/null | grep -m1 Gradle || echo onbekend)"
+          echo "platforms: $(ls "$SDK/platforms" 2>/dev/null | sort -V | tr '\n' ' ')"
+          echo "build-tools: $(ls "$SDK/build-tools" 2>/dev/null | sort -V | tr '\n' ' ')"
+          echo "gradle op runner: $(gradle --version 2>/dev/null | grep -m1 Gradle)"
+          echo "java: $(java -version 2>&1 | head -1)"
