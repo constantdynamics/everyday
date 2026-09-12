@@ -19,6 +19,7 @@ import nl.constantdynamics.everyday.data.media.FotoLader
 import nl.constantdynamics.everyday.data.media.GhostCache
 import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.opslag.Instellingen
+import nl.constantdynamics.everyday.data.video.TimelapseMaker
 
 /**
  * Handgeschreven afhankelijkhedencontainer. Bewust geen DI-framework: één module,
@@ -44,6 +45,10 @@ class AppContainer(context: Context) {
     val ghostCache: GhostCache by lazy { GhostCache(appContext, fotoLader) }
 
     val bewerker: Bewerker by lazy { Bewerker(fotoLader) }
+
+    val timelapseMaker: TimelapseMaker by lazy {
+        TimelapseMaker(appContext, fotoLader, mediaOpslag)
+    }
 
     val instellingen: Instellingen by lazy { Instellingen(appContext) }
 

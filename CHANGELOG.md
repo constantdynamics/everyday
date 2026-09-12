@@ -2,6 +2,41 @@
 
 Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
+## M6 — timelapse
+
+**Opgeleverd**
+
+- Video renderen uit de foto-van-de-dag, chronologisch, met een **eigen encoder**:
+  MediaCodec en MediaMuxer, waarbij elk beeld op een Canvas wordt samengesteld en via
+  een kleine OpenGL ES 2-brug op de invoer-surface van de encoder komt. Geen FFmpeg,
+  geen extra afhankelijkheden.
+- Instelscherm met snelheid (kiezen per fps of op totale lengte, de ander rekent mee),
+  beeldverhouding (9:16, 4:5, 1:1, 16:9), resolutie (720p, 1080p, 1440p), vullen of
+  passend, snijpunt bij vullen, harde cut of crossfade met instelbare overgangsduur,
+  en de datumstempel met positie, opmaak en tekstgrootte.
+- **Vullen** snijdt weg wat niet past, met een instelbaar snijpunt omdat bij portretten
+  het gezicht zelden precies in het midden zit. **Passend** laat de hele foto zien met
+  zwarte balken. Er wordt nooit uitgerekt.
+- Bij een harde cut is er precies één beeld per foto. Bij een crossfade wordt op 30
+  beelden per seconde gerenderd zodat de overgang vloeiend is, terwijl de totale
+  lengte exact hetzelfde blijft.
+- De datumstempel is wit met een subtiele schaduw, zodat hij op elke achtergrond
+  leesbaar blijft.
+- **Geheugen:** streamend verwerkt. Er zijn nooit meer dan twee gedecodeerde foto's
+  tegelijk in het geheugen, allebei al verkleind naar de doelresolutie. Een serie van
+  vijfhonderd foto's kost daarmee niet meer geheugen dan een serie van tien.
+- Voortgangsbalk met annuleren. Tijdens het renderen blijft het scherm aan; er is geen
+  foreground service en dus ook geen meldingenpermissie nodig.
+- De video komt in `Movies/Everyday/` via MediaStore en verschijnt pas in je galerij
+  als hij af is — een afgebroken render laat niets achter. Daarna kun je hem delen of
+  opnieuw maken met andere instellingen.
+- De timing van beelden, overgangen en afmetingen zit in `kern` en is door unit tests
+  gedekt.
+
+**Nog niet in M6**
+
+Muziek, en het onthouden van de laatst gebruikte instellingen per serie; die komen in M7.
+
 ## M5 — importeren uit de galerij
 
 **Opgeleverd**

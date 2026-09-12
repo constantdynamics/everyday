@@ -161,6 +161,42 @@ class MediaOpslag(private val context: Context) {
         }.getOrNull()
     }
 
+    fun videoRelatiefPad(): String = "${Environment.DIRECTORY_MOVIES}/$HOOFDMAP"
+
+    fun videoZichtbaarPad(): String = "Movies/$HOOFDMAP"
+
+    fun videoBestandsnaam(mapNaam: String, dag: java.time.LocalDate): String =
+        mapNaam + "_timelapse_" + dag + ".mp4"
+
+    /** Maakt een nog onzichtbare videopositie; pas na [rondVideoAf] verschijnt hij in de galerij. */
+    suspend fun maakVideo(bestandsnaam: String): Uri? = withContext(Dispatchers.IO) {
+        val waarden = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, bestandsnaam)
+            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            put(MediaStore.Video.Media.RELATIVE_PATH, videoRelatiefPad())
+            put(MediaStore.Video.Media.IS_PENDING, 1)
+        }
+        runCatching {
+            resolver.insert(
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+                waarden,
+            )
+        }.getOrNull()
+    }
+
+    suspend fun rondVideoAf(uri: Uri) {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                resolver.update(
+                    uri,
+                    ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) },
+                    null,
+                    null,
+                )
+            }
+        }
+    }
+
     /** De datum die het systeem van een bestand kent; de terugval bij importeren. */
     suspend fun bestandsMoment(uri: Uri): Instant? = withContext(Dispatchers.IO) {
         val genomen = runCatching {

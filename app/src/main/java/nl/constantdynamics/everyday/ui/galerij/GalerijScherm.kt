@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -54,6 +55,7 @@ fun GalerijScherm(
     naarOpname: (Long) -> Unit,
     naarDag: (java.time.LocalDate) -> Unit,
     naarImporteren: () -> Unit,
+    naarTimelapse: () -> Unit,
 ) {
     val viewModel: GalerijViewModel = viewModel(
         key = "galerij-$serieId",
@@ -74,6 +76,9 @@ fun GalerijScherm(
                 actions = {
                     IconButton(onClick = naarImporteren) {
                         Icon(Icons.Filled.AddPhotoAlternate, contentDescription = "Foto's importeren")
+                    }
+                    IconButton(onClick = naarTimelapse) {
+                        Icon(Icons.Filled.Movie, contentDescription = "Timelapse maken")
                     }
                 },
             )
