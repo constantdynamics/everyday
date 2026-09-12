@@ -9,10 +9,12 @@ import nl.constantdynamics.everyday.data.db.FotoEntiteit
 import nl.constantdynamics.everyday.data.db.SerieEntiteit
 import nl.constantdynamics.everyday.data.backup.BackupBeheer
 import nl.constantdynamics.everyday.data.backup.BackupOpslag
+import nl.constantdynamics.everyday.data.media.Bewerker
 import nl.constantdynamics.everyday.data.media.GhostCache
 import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.opslag.Instellingen
 import nl.constantdynamics.everyday.kern.Bron
+import nl.constantdynamics.everyday.kern.Bewerking
 import nl.constantdynamics.everyday.kern.Dagindeling
 import java.time.Duration
 import java.time.Instant
@@ -27,6 +29,7 @@ class FotoRepository(
     private val serieDao: nl.constantdynamics.everyday.data.db.SerieDao,
     private val backupBeheer: BackupBeheer,
     private val backupOpslag: BackupOpslag,
+    private val bewerker: Bewerker,
 ) {
 
     fun fotosVanDeDag(serieId: Long): Flow<List<FotoEntiteit>> = fotoDao.fotosVanDeDag(serieId)
@@ -106,6 +109,74 @@ class FotoRepository(
         }
     }
 
+    suspend fun fotoEenmalig(fotoId: Long): FotoEntiteit? = fotoDao.fotoEenmalig(fotoId)
+
+    fun foto(fotoId: Long): Flow<FotoEntiteit?> = fotoDao.fotoStroom(fotoId)
+
+    /**
+     * Bewaart een bewerking als parameters plus een gerenderde afgeleide in bewerkt/.
+     * Het origineel blijft ongemoeid; is de bewerking leeg, dan wordt alles teruggezet.
+     */
+    suspend fun bewaarBewerking(fotoId: Long, bewerking: Bewerking): Boolean {
+        val foto = fotoDao.fotoEenmalig(fotoId) ?: return false
+        val serie = serieDao.serieEenmalig(foto.serieId) ?: return false
+        if (bewerking.isLeeg) {
+            herstelOrigineel(fotoId)
+            return true
+        }
+
+        // Eerst de oude afgeleide weg, anders maakt MediaStore er "naam (1).jpg" van.
+        foto.bewerktUri?.let { mediaOpslag.verwijderBestand(Uri.parse(it)) }
+
+        val nieuweUri = mediaOpslag.schrijfJpeg(
+            mapNaam = serie.mapNaam,
+            bestandsnaam = foto.bestandsnaam,
+            moment = foto.gemaaktOp,
+            submap = BackupBeheer.SUBMAP_BEWERKT,
+        ) { uitvoer ->
+            check(bewerker.rendeerNaarJpeg(Uri.parse(foto.origineelUri), bewerking, uitvoer)) {
+                "De bewerking kon niet worden gerenderd"
+            }
+        } ?: return false
+
+        fotoDao.werkBij(
+            foto.copy(
+                rotatie = bewerking.graden,
+                rechtzetHoek = bewerking.rechtzetHoek,
+                cropL = bewerking.links,
+                cropT = bewerking.boven,
+                cropR = bewerking.rechts,
+                cropB = bewerking.onder,
+                bewerktUri = nieuweUri.toString(),
+            ),
+        )
+        backupBeheer.zetInWachtrij(
+            serieMapNaam = serie.mapNaam,
+            bestandsnaam = foto.bestandsnaam,
+            bronUri = nieuweUri.toString(),
+            submap = BackupBeheer.SUBMAP_BEWERKT,
+        )
+        backupBeheer.verwerkWachtrij()
+        return true
+    }
+
+    /** Wist de afgeleide en alle bewerkingsparameters; het origineel was er altijd al. */
+    suspend fun herstelOrigineel(fotoId: Long) {
+        val foto = fotoDao.fotoEenmalig(fotoId) ?: return
+        foto.bewerktUri?.let { mediaOpslag.verwijderBestand(Uri.parse(it)) }
+        fotoDao.werkBij(
+            foto.copy(
+                rotatie = 0,
+                rechtzetHoek = 0f,
+                cropL = null,
+                cropT = null,
+                cropR = null,
+                cropB = null,
+                bewerktUri = null,
+            ),
+        )
+    }
+
     suspend fun ghostVoor(foto: FotoEntiteit) =
         ghostCache.ghost(foto.id, foto.toonUri(), foto.ghostVersie())
 
@@ -117,6 +188,16 @@ class FotoRepository(
 
 /** De te tonen versie van een foto: bewerkt als die bestaat, anders het origineel. */
 fun FotoEntiteit.toonUri(): Uri = Uri.parse(bewerktUri ?: origineelUri)
+
+/** De opgeslagen bewerking van een foto, klaar om opnieuw te tonen of te renderen. */
+fun FotoEntiteit.bewerking(): Bewerking = Bewerking(
+    kwartslagen = rotatie / 90,
+    rechtzetHoek = rechtzetHoek,
+    links = cropL ?: 0f,
+    boven = cropT ?: 0f,
+    rechts = cropR ?: 1f,
+    onder = cropB ?: 1f,
+)
 
 /** Verandert zodra de bewerking verandert, zodat de ghost-cache vanzelf verjaart. */
 fun FotoEntiteit.ghostVersie(): String =

@@ -2,6 +2,26 @@
 
 Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
+## M4 — bewerken: roteren, rechtzetten en bijsnijden
+
+**Opgeleverd**
+
+- Bewerkscherm met kwartslagen, vrij rechtzetten van -15 tot +15 graden en een
+  uitsnede die je met de hoeken versleept, met derdenlijnen als hulp.
+- **Het origineel wordt nooit overschreven.** De bewerking wordt opgeslagen als
+  parameters in de database plus een gerenderde afgeleide in
+  `Pictures/Everyday/<serie>/bewerkt/`, onder dezelfde bestandsnaam.
+- "Herstel origineel" wist de afgeleide en alle parameters in één keer.
+- Bij rechtzetten wordt automatisch de grootste rechthoek met dezelfde verhouding
+  genomen die nog binnen het gedraaide beeld past, zodat er nooit lege hoeken
+  overblijven. Die berekening zit in `kern` en wordt door unit tests gedekt.
+- De bewerkte versie wordt overal gebruikt waar de foto wordt getoond: galerij,
+  dagdetail, ghost overlay en straks de timelapse. De ghost-cache verjaart vanzelf
+  doordat de cachesleutel de bewerking meeneemt.
+- De afgeleide gaat ook naar de backupmap, in de submap `bewerkt/`.
+- De volgorde ligt vast en is uitlegbaar: eerst draaien, dan rechtzetten, dan
+  bijsnijden. De uitsnede wordt dus uitgedrukt in het rechtgezette beeld.
+
 ## M3 — backupmap, kopieerwachtrij, metadata en herstellen
 
 **Opgeleverd**

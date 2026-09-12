@@ -30,6 +30,12 @@ class FotoLader(private val context: Context) {
         return bitmap
     }
 
+    /**
+     * Zonder cache, voor grote beelden die maar één keer nodig zijn — zoals bij het
+     * renderen van een bewerking. Zo blijft de cache gevuld met kleine miniaturen.
+     */
+    suspend fun laadVers(uri: Uri, maxZijde: Int): Bitmap? = decodeer(uri, maxZijde)
+
     fun leegCache() = cache.evictAll()
 
     private suspend fun decodeer(uri: Uri, maxZijde: Int): Bitmap? = withContext(Dispatchers.IO) {

@@ -13,6 +13,7 @@ import nl.constantdynamics.everyday.data.backup.BackupOpslag
 import nl.constantdynamics.everyday.data.backup.HerstelBeheer
 import nl.constantdynamics.everyday.data.db.ALLE_MIGRATIES
 import nl.constantdynamics.everyday.data.db.EverydayDatabase
+import nl.constantdynamics.everyday.data.media.Bewerker
 import nl.constantdynamics.everyday.data.media.FotoLader
 import nl.constantdynamics.everyday.data.media.GhostCache
 import nl.constantdynamics.everyday.data.media.MediaOpslag
@@ -40,6 +41,8 @@ class AppContainer(context: Context) {
     val fotoLader: FotoLader by lazy { FotoLader(appContext) }
 
     val ghostCache: GhostCache by lazy { GhostCache(appContext, fotoLader) }
+
+    val bewerker: Bewerker by lazy { Bewerker(fotoLader) }
 
     val instellingen: Instellingen by lazy { Instellingen(appContext) }
 
@@ -80,6 +83,7 @@ class AppContainer(context: Context) {
             serieDao = database.serieDao(),
             backupBeheer = backupBeheer,
             backupOpslag = backupOpslag,
+            bewerker = bewerker,
         )
     }
 

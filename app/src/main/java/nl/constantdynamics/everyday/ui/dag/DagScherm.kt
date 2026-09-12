@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -66,6 +67,7 @@ fun DagScherm(
     dag: LocalDate,
     terug: () -> Unit,
     naarOpname: (Long) -> Unit,
+    naarBewerken: (Long) -> Unit,
 ) {
     val viewModel: DagViewModel = viewModel(
         key = "dag-$serieId-$dag",
@@ -160,6 +162,7 @@ fun DagScherm(
                     }
                 },
                 deel = { deelFoto(context, huidige.toonUri()) },
+                bewerk = { naarBewerken(huidige.id) },
                 vervang = { naarOpname(serieId) },
                 verwijder = { teVerwijderen = huidige },
             )
@@ -198,6 +201,7 @@ private fun Onderregel(
     isStandaard: Boolean,
     wisselFotoVanDeDag: () -> Unit,
     deel: () -> Unit,
+    bewerk: () -> Unit,
     vervang: () -> Unit,
     verwijder: () -> Unit,
 ) {
@@ -217,6 +221,7 @@ private fun Onderregel(
                 text = buildString {
                     append(tijdstip(foto.gemaaktOp))
                     if (aantal > 1) append(" · foto $positie van $aantal")
+                    if (foto.bewerktUri != null) append(" · bewerkt")
                     if (foto.datumOnzeker) append(" · datum onzeker")
                 },
                 color = Color.White.copy(alpha = 0.8f),
@@ -259,6 +264,9 @@ private fun Onderregel(
             }
             IconButton(onClick = deel) {
                 Icon(Icons.Filled.Share, contentDescription = "Delen", tint = Color.White)
+            }
+            IconButton(onClick = bewerk) {
+                Icon(Icons.Filled.Tune, contentDescription = "Bewerken", tint = Color.White)
             }
             IconButton(onClick = vervang) {
                 Icon(Icons.Filled.PhotoCamera, contentDescription = "Vervangen", tint = Color.White)

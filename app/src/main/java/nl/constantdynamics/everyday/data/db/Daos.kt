@@ -76,6 +76,9 @@ interface FotoDao {
     @Query("SELECT * FROM foto WHERE id = :fotoId")
     suspend fun fotoEenmalig(fotoId: Long): FotoEntiteit?
 
+    @Query("SELECT * FROM foto WHERE id = :fotoId")
+    fun fotoStroom(fotoId: Long): Flow<FotoEntiteit?>
+
     @Query("SELECT * FROM foto")
     suspend fun alles(): List<FotoEntiteit>
 

@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.constantdynamics.everyday.AppContainer
+import nl.constantdynamics.everyday.ui.bewerken.BewerkScherm
 import nl.constantdynamics.everyday.ui.dag.DagScherm
 import nl.constantdynamics.everyday.ui.galerij.GalerijScherm
 import nl.constantdynamics.everyday.ui.instellingen.InstellingenScherm
@@ -22,10 +23,13 @@ object Routes {
     const val GALERIJ = "serie/{$SERIE_ID}/galerij"
     const val DAGDETAIL = "serie/{$SERIE_ID}/dag/{$DAG}"
     const val INSTELLINGEN = "instellingen"
+    const val FOTO_ID = "fotoId"
+    const val BEWERKEN = "foto/{$FOTO_ID}/bewerken"
 
     fun opname(serieId: Long) = "serie/$serieId/opname"
     fun galerij(serieId: Long) = "serie/$serieId/galerij"
     fun dagdetail(serieId: Long, dag: LocalDate) = "serie/$serieId/dag/$dag"
+    fun bewerken(fotoId: Long) = "foto/$fotoId/bewerken"
 }
 
 @Composable
@@ -88,8 +92,19 @@ fun EverydayApp(container: AppContainer) {
                     dag = dag,
                     terug = { navController.popBackStack() },
                     naarOpname = { navController.navigate(Routes.opname(it)) },
+                    naarBewerken = { fotoId -> navController.navigate(Routes.bewerken(fotoId)) },
                 )
             }
+        }
+        composable(
+            route = Routes.BEWERKEN,
+            arguments = listOf(navArgument(Routes.FOTO_ID) { type = NavType.LongType }),
+        ) { ingang ->
+            BewerkScherm(
+                container = container,
+                fotoId = ingang.arguments?.getLong(Routes.FOTO_ID) ?: 0L,
+                terug = { navController.popBackStack() },
+            )
         }
     }
 }
