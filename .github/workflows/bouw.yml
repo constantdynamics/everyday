@@ -53,6 +53,16 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      - name: Room-schema bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: everyday-room-schema
+          path: app/schemas/**/*.json
+          if-no-files-found: warn
+
+      # Als laatste stap, zodat de uitvoer onderaan de log staat en het schema
+      # daar in zijn geheel uit te halen is.
       - name: Geëxporteerd Room-schema controleren en tonen
         run: |
           set -e
@@ -63,34 +73,26 @@ jobs:
             # Bij een build die grotendeels uit de cache komt draait KSP niet en
             # wordt het schema niet opnieuw weggeschreven. Dan forceren we het.
             echo "Geen schema na deze build; KSP wordt geforceerd opnieuw gedraaid."
-            ./gradlew --no-daemon assembleDebug --rerun-tasks
+            ./gradlew --no-daemon assembleDebug --rerun-tasks > /dev/null
           fi
           if ! schema_aanwezig; then
             echo "FOUT: Room heeft geen schema geëxporteerd, terwijl exportSchema aanstaat."
             echo "Zonder geëxporteerd schema zijn latere migraties niet te controleren."
             exit 1
           fi
+          # Alleen letten op schema's die al zijn vastgelegd: wijkt het vastgelegde
+          # schema af van wat de build oplevert, dan is er iets niet bijgewerkt.
+          if [ -n "$(git status --porcelain --untracked-files=no -- app/schemas)" ]; then
+            echo "FOUT: het vastgelegde Room-schema loopt achter op wat de build oplevert."
+            git status --short -- app/schemas
+            exit 1
+          fi
           find app/schemas -name '*.json' | sort | while read -r bestand; do
-            echo "===== $bestand ($(wc -c < "$bestand") bytes)"
+            echo "SCHEMA $bestand ($(wc -c < "$bestand") bytes)"
             # Als één base64-regel, zodat het schema in zijn geheel uit de log te
             # halen is; de blob-opslag van artefacten is niet overal bereikbaar.
             echo "BASE64:$(base64 -w0 "$bestand")"
           done
-          if [ -n "$(git status --porcelain -- app/schemas)" ]; then
-            echo
-            echo "FOUT: het vastgelegde Room-schema loopt achter op wat de build oplevert."
-            echo "Leg het bijgewerkte schema vast in de repository:"
-            git status --short -- app/schemas
-            exit 1
-          fi
-
-      - name: Room-schema bewaren
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: everyday-room-schema
-          path: app/schemas/**/*.json
-          if-no-files-found: warn
 
   release:
     name: Ondertekende release-APK
