@@ -1,0 +1,137 @@
+name: Bouw APK
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bouw:
+    name: Debug-APK bouwen en controleren
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Beschikbare versies tonen
+        continue-on-error: true
+        run: |
+          toon_google() {
+            echo "--- $1"
+            curl -sL "https://dl.google.com/dl/android/maven2/$1/maven-metadata.xml" \
+              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | tail -6 | tr '\n' ' '
+            echo
+          }
+          toon_central() {
+            echo "--- $1"
+            curl -sL "https://repo1.maven.org/maven2/$1/maven-metadata.xml" \
+              | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | tail -6 | tr '\n' ' '
+            echo
+          }
+          toon_google com/android/tools/build/gradle
+          toon_google androidx/compose/compose-bom
+          toon_google androidx/camera/camera-core
+          toon_google androidx/room/room-runtime
+          toon_google androidx/navigation/navigation-compose
+          toon_google androidx/lifecycle/lifecycle-runtime-compose
+          toon_google androidx/activity/activity-compose
+          toon_google androidx/datastore/datastore-preferences
+          toon_google androidx/exifinterface/exifinterface
+          toon_google androidx/core/core-ktx
+          toon_central org/jetbrains/kotlin/kotlin-gradle-plugin
+          toon_central com/google/devtools/ksp/symbol-processing-gradle-plugin
+          toon_central org/jetbrains/kotlinx/kotlinx-coroutines-android
+          echo "--- geïnstalleerde sdk-platforms"
+          ls "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/platforms" || true
+          echo "--- build-tools"
+          ls "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools" || true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle klaarzetten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Debug-APK bouwen
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Samengevoegde manifest controleren
+        run: |
+          set -e
+          manifest=$(find app/build/intermediates -path '*merged_manifest*debug*' -name AndroidManifest.xml | head -1)
+          if [ -z "$manifest" ]; then
+            manifest=$(find app/build/intermediates -name AndroidManifest.xml -path '*debug*' | head -1)
+          fi
+          echo "Manifest: $manifest"
+          cat "$manifest"
+          echo "----"
+          if grep -qE 'android\.permission\.(INTERNET|POST_NOTIFICATIONS|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION)' "$manifest"; then
+            echo "FOUT: de samengevoegde manifest bevat een verboden permissie."
+            exit 1
+          fi
+          echo "OK: geen netwerk-, meldingen- of locatiepermissie aanwezig."
+
+      - name: Unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+
+      - name: Debug-APK bewaren
+        uses: actions/upload-artifact@v4
+        with:
+          name: everyday-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  release:
+    name: Ondertekende release-APK
+    runs-on: ubuntu-latest
+    needs: bouw
+    # Draait alleen als je de keystore als repository-secret hebt gezet; zie README.
+    if: ${{ github.ref_name == 'main' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Keystore uitpakken
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.EVERYDAY_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "aanwezig=nee" >> "$GITHUB_OUTPUT"
+            echo "Geen keystore-secret gevonden; release-stap wordt overgeslagen."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/everyday.jks"
+          echo "aanwezig=ja" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        if: steps.keystore.outputs.aanwezig == 'ja'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle klaarzetten
+        if: steps.keystore.outputs.aanwezig == 'ja'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Release-APK bouwen
+        if: steps.keystore.outputs.aanwezig == 'ja'
+        env:
+          EVERYDAY_KEYSTORE_FILE: ${{ runner.temp }}/everyday.jks
+          EVERYDAY_KEYSTORE_PASSWORD: ${{ secrets.EVERYDAY_KEYSTORE_PASSWORD }}
+          EVERYDAY_KEY_ALIAS: ${{ secrets.EVERYDAY_KEY_ALIAS }}
+          EVERYDAY_KEY_PASSWORD: ${{ secrets.EVERYDAY_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Release-APK bewaren
+        if: steps.keystore.outputs.aanwezig == 'ja'
+        uses: actions/upload-artifact@v4
+        with:
+          name: everyday-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
