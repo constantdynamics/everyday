@@ -2,6 +2,32 @@
 
 Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
 
+## M2 — ghost overlay, dagdetail, foto-van-de-dag, verwijderen
+
+**Opgeleverd**
+
+- **Ghost overlay**: de allerlaatst gemaakte foto van de serie ligt halftransparant
+  over het live camerabeeld. Het camerabeeld krijgt precies de beeldverhouding van
+  de sensor, zodat een foto met een afwijkende verhouding gecentreerd op hetzelfde
+  rechthoekje wordt ingepast en nooit wordt uitgerekt.
+- Schuifregelaar voor de dekking (standaard 40%, wordt onthouden), en het beeld
+  ingedrukt houden haalt de overlay even weg.
+- Bij de voorcamera wordt de overlay gespiegeld getoond, omdat het live beeld
+  gespiegeld is en de opgeslagen foto niet. Zo liggen ze op elkaar.
+- Ghost-cache op schijf: na elke opname wordt meteen een verkleinde versie
+  weggeschreven, zodat het opnamescherm niet hoeft te wachten op het decoderen van
+  een foto op volle resolutie.
+- **Dagdetail**: alle foto's van één dag naast elkaar, met tijdstip en teller.
+- **Foto-van-de-dag** kiezen met de ster; de automatisch gekozen foto draagt het
+  label "standaard", een handmatige keuze "gekozen als foto van de dag", en de ster
+  zet de keuze weer terug naar standaard.
+- **Verwijderen** met een prullenbak van 30 dagen: de foto verdwijnt uit de app maar
+  het bestand blijft staan, met "Ongedaan maken" in de melding. Bij het starten van
+  de app wordt alles opgeruimd dat de termijn voorbij is; pas dan verdwijnt het
+  bestand echt.
+- **Vervangen** opent het opnamescherm, en **delen** gaat via de Android-sharesheet.
+- Tikken op een dag in de galerij opent het dagdetail.
+
 ## M1 — projectskelet, series, opnemen, galerij
 
 **Opgeleverd**

@@ -2,6 +2,7 @@ package nl.constantdynamics.everyday.ui.galerij
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,7 @@ fun GalerijScherm(
     serieId: Long,
     terug: () -> Unit,
     naarOpname: (Long) -> Unit,
+    naarDag: (java.time.LocalDate) -> Unit,
 ) {
     val viewModel: GalerijViewModel = viewModel(
         key = "galerij-$serieId",
@@ -104,7 +106,7 @@ fun GalerijScherm(
                     }
                     val rijen = groep.fotos.chunked(KOLOMMEN)
                     items(count = rijen.size, key = { index -> "rij-${groep.maand}-$index" }) { index ->
-                        DagRij(fotos = rijen[index])
+                        DagRij(fotos = rijen[index], openDag = naarDag)
                     }
                 }
             }
@@ -113,13 +115,13 @@ fun GalerijScherm(
 }
 
 @Composable
-private fun DagRij(fotos: List<FotoEntiteit>) {
+private fun DagRij(fotos: List<FotoEntiteit>, openDag: (java.time.LocalDate) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         fotos.forEach { foto ->
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).clickable { openDag(foto.dagSleutel) }) {
                 FotoBeeld(
                     uri = foto.toonUri(),
                     maxZijde = 480,

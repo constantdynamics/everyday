@@ -1,5 +1,6 @@
 package nl.constantdynamics.everyday.ui.opname
 
+import android.graphics.Bitmap
 import androidx.camera.core.ImageCapture
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nl.constantdynamics.everyday.AppContainer
@@ -23,6 +25,7 @@ import nl.constantdynamics.everyday.data.db.FotoEntiteit
 import nl.constantdynamics.everyday.data.db.SerieEntiteit
 import nl.constantdynamics.everyday.data.media.MediaOpslag
 import nl.constantdynamics.everyday.data.media.maakFoto
+import nl.constantdynamics.everyday.data.opslag.Instellingen
 import nl.constantdynamics.everyday.kern.LensRichting
 import java.time.Instant
 
@@ -31,6 +34,7 @@ class OpnameViewModel(
     private val serieRepository: SerieRepository,
     private val fotoRepository: FotoRepository,
     private val mediaOpslag: MediaOpslag,
+    private val instellingen: Instellingen,
 ) : ViewModel() {
 
     val serie: StateFlow<SerieEntiteit?> = serieRepository.serie(serieId)
@@ -39,6 +43,14 @@ class OpnameViewModel(
     /** De allerlaatst gemaakte foto van deze serie: bron voor de ghost overlay. */
     val laatsteFoto: StateFlow<FotoEntiteit?> = fotoRepository.laatsteFoto(serieId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Komt uit de ghost-cache, zodat het opnamescherm niet op een volle foto hoeft te wachten. */
+    val ghost: StateFlow<Bitmap?> = fotoRepository.laatsteFoto(serieId)
+        .map { foto -> foto?.let { fotoRepository.ghostVoor(it) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val ghostDekking: StateFlow<Float> = instellingen.ghostDekking
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.4f)
 
     var bezig by mutableStateOf(false)
         private set
@@ -53,6 +65,10 @@ class OpnameViewModel(
             LensRichting.ACHTER -> LensRichting.VOOR
         }
         viewModelScope.launch { serieRepository.zetLensRichting(serieId, nieuwe) }
+    }
+
+    fun zetGhostDekking(dekking: Float) {
+        viewModelScope.launch { instellingen.zetGhostDekking(dekking) }
     }
 
     fun maakFoto(opnemer: ImageCapture) {
@@ -84,6 +100,7 @@ class OpnameViewModel(
                     serieRepository = container.serieRepository,
                     fotoRepository = container.fotoRepository,
                     mediaOpslag = container.mediaOpslag,
+                    instellingen = container.instellingen,
                 )
             }
         }

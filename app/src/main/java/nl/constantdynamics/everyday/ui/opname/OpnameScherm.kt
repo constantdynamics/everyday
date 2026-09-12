@@ -2,6 +2,8 @@ package nl.constantdynamics.everyday.ui.opname
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -9,31 +11,38 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -51,6 +60,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -58,12 +71,14 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import nl.constantdynamics.everyday.AppContainer
 import nl.constantdynamics.everyday.data.media.cameraAanbieder
 import nl.constantdynamics.everyday.data.toonUri
 import nl.constantdynamics.everyday.kern.LensRichting
 import nl.constantdynamics.everyday.ui.onderdelen.FotoBeeld
 import nl.constantdynamics.everyday.ui.onderdelen.LegeStaat
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +96,8 @@ fun OpnameScherm(
     val levensloopEigenaar = LocalLifecycleOwner.current
     val serie by viewModel.serie.collectAsStateWithLifecycle()
     val laatsteFoto by viewModel.laatsteFoto.collectAsStateWithLifecycle()
+    val ghost by viewModel.ghost.collectAsStateWithLifecycle()
+    val ghostDekking by viewModel.ghostDekking.collectAsStateWithLifecycle()
     val meldingen = remember { SnackbarHostState() }
 
     var heeftToestemming by remember {
@@ -117,6 +134,8 @@ fun OpnameScherm(
         }
     }
     var aanbieder by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var beeldVerhouding by remember { mutableStateOf<Float?>(null) }
+    var overlayVerborgen by remember { mutableStateOf(false) }
     val lensRichting = serie?.lensRichting
 
     LaunchedEffect(heeftToestemming, lensRichting) {
@@ -129,9 +148,27 @@ fun OpnameScherm(
             LensRichting.VOOR -> CameraSelector.DEFAULT_FRONT_CAMERA
             LensRichting.ACHTER -> CameraSelector.DEFAULT_BACK_CAMERA
         }
-        runCatching {
+        val gebonden = runCatching {
             cameraAanbieder.unbindAll()
             cameraAanbieder.bindToLifecycle(levensloopEigenaar, kiezer, voorbeeld, opnemer)
+        }.isSuccess
+        if (!gebonden) return@LaunchedEffect
+
+        // De beeldverhouding is pas bekend zodra de camera een surface heeft. We geven
+        // het voorbeeld precies die verhouding, zodat de ghost overlay op exact
+        // hetzelfde rechthoekje ligt als het live beeld.
+        repeat(20) {
+            val info = runCatching { voorbeeld.resolutionInfo }.getOrNull()
+            if (info != null) {
+                val gedraaid = info.rotationDegrees == 90 || info.rotationDegrees == 270
+                val breedte = if (gedraaid) info.resolution.height else info.resolution.width
+                val hoogte = if (gedraaid) info.resolution.width else info.resolution.height
+                if (breedte > 0 && hoogte > 0) {
+                    beeldVerhouding = breedte.toFloat() / hoogte.toFloat()
+                    return@LaunchedEffect
+                }
+            }
+            delay(100)
         }
     }
 
@@ -166,9 +203,13 @@ fun OpnameScherm(
                 contentAlignment = Alignment.Center,
             ) {
                 if (heeftToestemming) {
-                    AndroidView(
-                        factory = { voorbeeldWeergave },
-                        modifier = Modifier.fillMaxSize(),
+                    Voorbeeld(
+                        weergave = voorbeeldWeergave,
+                        beeldVerhouding = beeldVerhouding,
+                        ghost = ghost,
+                        ghostDekking = if (overlayVerborgen) 0f else ghostDekking,
+                        spiegelGhost = lensRichting == LensRichting.VOOR,
+                        zetVerborgen = { overlayVerborgen = it },
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -183,6 +224,13 @@ fun OpnameScherm(
                 }
             }
 
+            if (ghost != null && heeftToestemming) {
+                GhostRegelaar(
+                    dekking = ghostDekking,
+                    wijzig = viewModel::zetGhostDekking,
+                )
+            }
+
             Balk(
                 bezig = viewModel.bezig,
                 laatsteFotoUri = laatsteFoto?.toonUri(),
@@ -195,10 +243,97 @@ fun OpnameScherm(
     }
 }
 
+/**
+ * Het live beeld met daarover de vorige foto. Beide liggen in hetzelfde rechthoekje,
+ * zodat een foto met een andere beeldverhouding gecentreerd wordt ingepast en nooit
+ * wordt uitgerekt. Ingedrukt houden haalt de overlay even weg.
+ */
+@Composable
+private fun Voorbeeld(
+    weergave: PreviewView,
+    beeldVerhouding: Float?,
+    ghost: Bitmap?,
+    ghostDekking: Float,
+    spiegelGhost: Boolean,
+    zetVerborgen: (Boolean) -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .then(
+                if (beeldVerhouding != null) {
+                    Modifier.fillMaxWidth().aspectRatio(beeldVerhouding)
+                } else {
+                    Modifier.fillMaxSize()
+                },
+            )
+            .pointerInput(ghost) {
+                detectTapGestures(
+                    onPress = {
+                        if (ghost == null) return@detectTapGestures
+                        zetVerborgen(true)
+                        tryAwaitRelease()
+                        zetVerborgen(false)
+                    },
+                )
+            },
+    ) {
+        AndroidView(factory = { weergave }, modifier = Modifier.fillMaxSize())
+
+        if (ghost != null && ghostDekking > 0f) {
+            Image(
+                bitmap = ghost.asImageBitmap(),
+                contentDescription = "Vorige foto als hulplijn",
+                contentScale = ContentScale.Fit,
+                alpha = ghostDekking,
+                modifier = Modifier
+                    .fillMaxSize()
+                    // De voorcamera toont een gespiegeld beeld; de opgeslagen foto is
+                    // niet gespiegeld, dus de overlay wordt hier gespiegeld getoond.
+                    .graphicsLayer { if (spiegelGhost) scaleX = -1f },
+            )
+        }
+    }
+}
+
+@Composable
+private fun GhostRegelaar(dekking: Float, wijzig: (Float) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black)
+            .padding(horizontal = 20.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            Icons.Filled.Layers,
+            contentDescription = "Doorzichtigheid van de vorige foto",
+            tint = Color.White,
+        )
+        Slider(
+            value = dekking,
+            onValueChange = wijzig,
+            valueRange = 0f..1f,
+            modifier = Modifier.weight(1f),
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Color.White,
+                inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+            ),
+        )
+        Text(
+            text = "${(dekking * 100).roundToInt()}%",
+            color = Color.White,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.width(40.dp),
+        )
+    }
+}
+
 @Composable
 private fun Balk(
     bezig: Boolean,
-    laatsteFotoUri: android.net.Uri?,
+    laatsteFotoUri: Uri?,
     opnameMogelijk: Boolean,
     maakFoto: () -> Unit,
     wisselLens: () -> Unit,

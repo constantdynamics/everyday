@@ -98,6 +98,11 @@ class MediaOpslag(private val context: Context) {
         }.getOrDefault(false)
     }
 
+    /** Verwijdert het bestand definitief uit MediaStore. */
+    suspend fun verwijderBestand(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching { resolver.delete(uri, null, null) > 0 }.getOrDefault(false)
+    }
+
     /** Leest het opnamemoment uit EXIF; wordt gebruikt bij importeren. */
     suspend fun momentUitExif(uri: Uri, zone: ZoneId = ZoneId.systemDefault()): Instant? =
         withContext(Dispatchers.IO) {

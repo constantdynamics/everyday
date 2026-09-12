@@ -7,18 +7,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.constantdynamics.everyday.AppContainer
+import nl.constantdynamics.everyday.ui.dag.DagScherm
 import nl.constantdynamics.everyday.ui.galerij.GalerijScherm
 import nl.constantdynamics.everyday.ui.opname.OpnameScherm
 import nl.constantdynamics.everyday.ui.start.StartScherm
+import java.time.LocalDate
 
 object Routes {
     const val START = "start"
     const val SERIE_ID = "serieId"
+    const val DAG = "dag"
     const val OPNAME = "serie/{$SERIE_ID}/opname"
     const val GALERIJ = "serie/{$SERIE_ID}/galerij"
+    const val DAGDETAIL = "serie/{$SERIE_ID}/dag/{$DAG}"
 
     fun opname(serieId: Long) = "serie/$serieId/opname"
     fun galerij(serieId: Long) = "serie/$serieId/galerij"
+    fun dagdetail(serieId: Long, dag: LocalDate) = "serie/$serieId/dag/$dag"
 }
 
 @Composable
@@ -48,12 +53,34 @@ fun EverydayApp(container: AppContainer) {
             route = Routes.GALERIJ,
             arguments = listOf(navArgument(Routes.SERIE_ID) { type = NavType.LongType }),
         ) { ingang ->
+            val serieId = ingang.arguments?.getLong(Routes.SERIE_ID) ?: 0L
             GalerijScherm(
                 container = container,
-                serieId = ingang.arguments?.getLong(Routes.SERIE_ID) ?: 0L,
+                serieId = serieId,
                 terug = { navController.popBackStack() },
                 naarOpname = { navController.navigate(Routes.opname(it)) },
+                naarDag = { dag -> navController.navigate(Routes.dagdetail(serieId, dag)) },
             )
+        }
+        composable(
+            route = Routes.DAGDETAIL,
+            arguments = listOf(
+                navArgument(Routes.SERIE_ID) { type = NavType.LongType },
+                navArgument(Routes.DAG) { type = NavType.StringType },
+            ),
+        ) { ingang ->
+            val serieId = ingang.arguments?.getLong(Routes.SERIE_ID) ?: 0L
+            val dagTekst = ingang.arguments?.getString(Routes.DAG)
+            val dag = runCatching { LocalDate.parse(dagTekst) }.getOrNull()
+            if (dag != null) {
+                DagScherm(
+                    container = container,
+                    serieId = serieId,
+                    dag = dag,
+                    terug = { navController.popBackStack() },
+                    naarOpname = { navController.navigate(Routes.opname(it)) },
+                )
+            }
         }
     }
 }

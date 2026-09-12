@@ -104,6 +104,19 @@ interface FotoDao {
     )
     fun fotosVanDeDag(serieId: Long): Flow<List<FotoEntiteit>>
 
+    @Query("UPDATE foto SET verwijderdOp = :moment WHERE id = :fotoId")
+    suspend fun markeerVerwijderd(fotoId: Long, moment: Instant)
+
+    @Query("UPDATE foto SET verwijderdOp = NULL WHERE id = :fotoId")
+    suspend fun herstelUitPrullenbak(fotoId: Long)
+
+    /** Foto's die lang genoeg in de prullenbak zitten om definitief te mogen verdwijnen. */
+    @Query("SELECT * FROM foto WHERE verwijderdOp IS NOT NULL AND verwijderdOp < :grens")
+    suspend fun verlopenInPrullenbak(grens: Instant): List<FotoEntiteit>
+
+    @Query("DELETE FROM foto WHERE id = :fotoId")
+    suspend fun wisDefinitief(fotoId: Long)
+
     /** Alle foto's van één dag, oudste eerst. */
     @Query(
         """
@@ -124,6 +137,10 @@ interface DagKeuzeDao {
     @Query("DELETE FROM dagkeuze WHERE serieId = :serieId AND dagSleutel = :dag")
     suspend fun wis(serieId: Long, dag: LocalDate)
 
-    @Query("SELECT * FROM dagkeuze WHERE serieId = :serieId AND dagSleutel = :dag")
-    suspend fun keuze(serieId: Long, dag: LocalDate): DagKeuzeEntiteit?
+    /** Opruimen wanneer de gekozen foto definitief verdwijnt. */
+    @Query("DELETE FROM dagkeuze WHERE fotoId = :fotoId")
+    suspend fun wisVoorFoto(fotoId: Long)
+
+    @Query("SELECT fotoId FROM dagkeuze WHERE serieId = :serieId AND dagSleutel = :dag")
+    fun gekozenFotoId(serieId: Long, dag: LocalDate): Flow<Long?>
 }
