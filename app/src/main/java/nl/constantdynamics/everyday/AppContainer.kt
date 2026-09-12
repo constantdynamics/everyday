@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import nl.constantdynamics.everyday.data.FotoRepository
+import nl.constantdynamics.everyday.data.ImportBeheer
 import nl.constantdynamics.everyday.data.SerieRepository
 import nl.constantdynamics.everyday.data.backup.BackupBeheer
 import nl.constantdynamics.everyday.data.backup.BackupOpslag
@@ -84,6 +85,16 @@ class AppContainer(context: Context) {
             backupBeheer = backupBeheer,
             backupOpslag = backupOpslag,
             bewerker = bewerker,
+        )
+    }
+
+    val importBeheer: ImportBeheer by lazy {
+        ImportBeheer(
+            context = appContext,
+            fotoDao = database.fotoDao(),
+            mediaOpslag = mediaOpslag,
+            instellingen = instellingen,
+            backupBeheer = backupBeheer,
         )
     }
 

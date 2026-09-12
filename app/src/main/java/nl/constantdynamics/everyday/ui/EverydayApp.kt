@@ -10,6 +10,7 @@ import nl.constantdynamics.everyday.AppContainer
 import nl.constantdynamics.everyday.ui.bewerken.BewerkScherm
 import nl.constantdynamics.everyday.ui.dag.DagScherm
 import nl.constantdynamics.everyday.ui.galerij.GalerijScherm
+import nl.constantdynamics.everyday.ui.importeren.ImportScherm
 import nl.constantdynamics.everyday.ui.instellingen.InstellingenScherm
 import nl.constantdynamics.everyday.ui.opname.OpnameScherm
 import nl.constantdynamics.everyday.ui.start.StartScherm
@@ -21,6 +22,7 @@ object Routes {
     const val DAG = "dag"
     const val OPNAME = "serie/{$SERIE_ID}/opname"
     const val GALERIJ = "serie/{$SERIE_ID}/galerij"
+    const val IMPORTEREN = "serie/{$SERIE_ID}/importeren"
     const val DAGDETAIL = "serie/{$SERIE_ID}/dag/{$DAG}"
     const val INSTELLINGEN = "instellingen"
     const val FOTO_ID = "fotoId"
@@ -28,6 +30,7 @@ object Routes {
 
     fun opname(serieId: Long) = "serie/$serieId/opname"
     fun galerij(serieId: Long) = "serie/$serieId/galerij"
+    fun importeren(serieId: Long) = "serie/$serieId/importeren"
     fun dagdetail(serieId: Long, dag: LocalDate) = "serie/$serieId/dag/$dag"
     fun bewerken(fotoId: Long) = "foto/$fotoId/bewerken"
 }
@@ -73,6 +76,17 @@ fun EverydayApp(container: AppContainer) {
                 terug = { navController.popBackStack() },
                 naarOpname = { navController.navigate(Routes.opname(it)) },
                 naarDag = { dag -> navController.navigate(Routes.dagdetail(serieId, dag)) },
+                naarImporteren = { navController.navigate(Routes.importeren(serieId)) },
+            )
+        }
+        composable(
+            route = Routes.IMPORTEREN,
+            arguments = listOf(navArgument(Routes.SERIE_ID) { type = NavType.LongType }),
+        ) { ingang ->
+            ImportScherm(
+                container = container,
+                serieId = ingang.arguments?.getLong(Routes.SERIE_ID) ?: 0L,
+                terug = { navController.popBackStack() },
             )
         }
         composable(

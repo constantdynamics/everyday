@@ -52,14 +52,26 @@ fun grootsteRechthoekNaDraaien(
     val langeZijde = if (breedteIsLanger) breedte else hoogte
     val korteZijde = if (breedteIsLanger) hoogte else breedte
 
-    return if (korteZijde <= 2f * sinus * cosinus * langeZijde || abs(sinus - cosinus) < 1e-6f) {
-        // Halve zijde bepaalt de uitkomst; de rechthoek raakt het midden van de zijden.
-        val half = 0.5f * korteZijde
-        if (breedteIsLanger) (half / sinus) to (half / cosinus) else (half / cosinus) to (half / sinus)
+    // Eerst de rechthoek met de grootste oppervlakte die nog past.
+    val (maxBreedte, maxHoogte) =
+        if (korteZijde <= 2f * sinus * cosinus * langeZijde || abs(sinus - cosinus) < 1e-6f) {
+            // Halve zijde bepaalt de uitkomst; de rechthoek raakt het midden van de zijden.
+            val half = 0.5f * korteZijde
+            if (breedteIsLanger) (half / sinus) to (half / cosinus) else (half / cosinus) to (half / sinus)
+        } else {
+            val cosDubbel = cosinus * cosinus - sinus * sinus
+            val nieuweBreedte = (breedte * cosinus - hoogte * sinus) / cosDubbel
+            val nieuweHoogte = (hoogte * cosinus - breedte * sinus) / cosDubbel
+            nieuweBreedte to nieuweHoogte
+        }
+
+    // Die rechthoek heeft niet vanzelf dezelfde verhouding als het origineel. Voor een
+    // dagelijkse serie is een constante beelduitsnede meer waard dan die laatste
+    // procenten oppervlak, dus passen we de oorspronkelijke verhouding erin.
+    val doelVerhouding = breedte / hoogte
+    return if (maxBreedte / maxHoogte > doelVerhouding) {
+        (maxHoogte * doelVerhouding) to maxHoogte
     } else {
-        val cosDubbel = cosinus * cosinus - sinus * sinus
-        val nieuweBreedte = (breedte * cosinus - hoogte * sinus) / cosDubbel
-        val nieuweHoogte = (hoogte * cosinus - breedte * sinus) / cosDubbel
-        nieuweBreedte to nieuweHoogte
+        maxBreedte to (maxBreedte / doelVerhouding)
     }
 }

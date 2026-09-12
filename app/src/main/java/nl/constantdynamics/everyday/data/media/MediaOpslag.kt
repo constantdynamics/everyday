@@ -17,6 +17,8 @@ import java.time.format.DateTimeFormatter
 
 data class Afmeting(val breedte: Int, val hoogte: Int)
 
+data class BestandsBeschrijving(val naam: String, val grootte: Long)
+
 /**
  * Alles wat met bestanden op het toestel te maken heeft. Foto's gaan als gewone JPG
  * naar Pictures/Everyday/<mapNaam>/ zodat de galerij ze ziet. Er wordt nooit een
@@ -140,6 +142,43 @@ class MediaOpslag(private val context: Context) {
                 gewijzigd
             } ?: false
         }.getOrDefault(false)
+    }
+
+    /** Naam en laatst gewijzigd van een willekeurig document, voor importeren. */
+    suspend fun beschrijving(uri: Uri): BestandsBeschrijving? = withContext(Dispatchers.IO) {
+        val kolommen = arrayOf(
+            android.provider.OpenableColumns.DISPLAY_NAME,
+            android.provider.OpenableColumns.SIZE,
+        )
+        runCatching {
+            resolver.query(uri, kolommen, null, null, null)?.use { rij ->
+                if (!rij.moveToFirst()) return@use null
+                BestandsBeschrijving(
+                    naam = rij.getString(0) ?: "",
+                    grootte = if (rij.isNull(1)) 0L else rij.getLong(1),
+                )
+            }
+        }.getOrNull()
+    }
+
+    /** De datum die het systeem van een bestand kent; de terugval bij importeren. */
+    suspend fun bestandsMoment(uri: Uri): Instant? = withContext(Dispatchers.IO) {
+        val genomen = runCatching {
+            resolver.query(uri, arrayOf(MediaStore.MediaColumns.DATE_TAKEN), null, null, null)
+                ?.use { rij ->
+                    if (rij.moveToFirst() && !rij.isNull(0)) Instant.ofEpochMilli(rij.getLong(0)) else null
+                }
+        }.getOrNull()
+        genomen ?: runCatching {
+            resolver.query(uri, arrayOf(MediaStore.MediaColumns.DATE_MODIFIED), null, null, null)
+                ?.use { rij ->
+                    if (rij.moveToFirst() && !rij.isNull(0)) {
+                        Instant.ofEpochSecond(rij.getLong(0))
+                    } else {
+                        null
+                    }
+                }
+        }.getOrNull()
     }
 
     /** Verwijdert het bestand definitief uit MediaStore. */

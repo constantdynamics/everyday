@@ -2,11 +2,13 @@ package nl.constantdynamics.everyday
 
 import nl.constantdynamics.everyday.kern.Bewerking
 import nl.constantdynamics.everyday.kern.Dagindeling
+import nl.constantdynamics.everyday.kern.datumUitBestandsnaam
 import nl.constantdynamics.everyday.kern.grootsteRechthoekNaDraaien
 import nl.constantdynamics.everyday.kern.maakMapNaam
 import nl.constantdynamics.everyday.kern.maakUniekeMapNaam
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -105,5 +107,57 @@ class BewerkingTest {
         val (breedte, hoogte) = grootsteRechthoekNaDraaien(1000f, 1000f, 15f)
         assertEquals(breedte, hoogte, 0.01f)
         assertTrue(breedte < 1000f)
+    }
+}
+
+class DatumUitNaamTest {
+
+    @Test
+    fun `herkent de gangbare camerabestandsnamen`() {
+        assertEquals(
+            LocalDateTime.of(2024, 6, 12, 15, 30, 45),
+            datumUitBestandsnaam("IMG_20240612_153045.jpg"),
+        )
+        assertEquals(
+            LocalDateTime.of(2024, 6, 12, 15, 30, 45),
+            datumUitBestandsnaam("PXL_20240612_153045.jpg"),
+        )
+        assertEquals(
+            LocalDateTime.of(2024, 6, 12, 15, 30, 45),
+            datumUitBestandsnaam("2024-06-12 15.30.45.jpg"),
+        )
+        assertEquals(
+            LocalDateTime.of(2024, 6, 12, 15, 30, 45),
+            datumUitBestandsnaam("Screenshot_20240612-153045.png"),
+        )
+    }
+
+    @Test
+    fun `valt terug op alleen een datum`() {
+        assertEquals(
+            LocalDateTime.of(2024, 6, 12, 0, 0),
+            datumUitBestandsnaam("vakantie-2024-06-12.jpg"),
+        )
+    }
+
+    @Test
+    fun `weigert onmogelijke en ongeloofwaardige datums`() {
+        assertNull(datumUitBestandsnaam("IMG_20241332_153045.jpg"))
+        assertNull(datumUitBestandsnaam("IMG_18700612_153045.jpg"))
+        assertNull(datumUitBestandsnaam("zonder datum.jpg"))
+        assertNull(datumUitBestandsnaam("IMG_1234.jpg"))
+    }
+
+    @Test
+    fun `bij een onmogelijke tijd blijft de datum wel staan`() {
+        assertEquals(
+            LocalDateTime.of(2024, 6, 12, 0, 0),
+            datumUitBestandsnaam("IMG_20240612_256045.jpg"),
+        )
+    }
+
+    @Test
+    fun `laat zich niet misleiden door een langer getal`() {
+        assertNull(datumUitBestandsnaam("bestand_123456789012.jpg"))
     }
 }

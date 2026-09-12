@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -52,6 +53,7 @@ fun GalerijScherm(
     terug: () -> Unit,
     naarOpname: (Long) -> Unit,
     naarDag: (java.time.LocalDate) -> Unit,
+    naarImporteren: () -> Unit,
 ) {
     val viewModel: GalerijViewModel = viewModel(
         key = "galerij-$serieId",
@@ -69,6 +71,11 @@ fun GalerijScherm(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug")
                     }
                 },
+                actions = {
+                    IconButton(onClick = naarImporteren) {
+                        Icon(Icons.Filled.AddPhotoAlternate, contentDescription = "Foto's importeren")
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -82,7 +89,7 @@ fun GalerijScherm(
             groepen == null -> Box(Modifier.fillMaxSize().padding(ruimte))
             groepen.isEmpty() -> LegeStaat(
                 titel = "Nog geen foto's",
-                uitleg = "Maak je eerste foto van deze serie met de cameraknop.",
+                uitleg = "Maak je eerste foto met de cameraknop, of voeg bestaande foto's toe met de knop rechtsboven.",
                 modifier = Modifier.fillMaxSize().padding(ruimte),
             )
             else -> LazyColumn(
