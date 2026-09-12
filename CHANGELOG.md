@@ -1,0 +1,214 @@
+# Changelog
+
+Per mijlpaal: wat er is opgeleverd en welke keuzes er onderweg zijn gemaakt.
+
+## M7 — muziek, instellingen, opslaggebruik en afwerking
+
+**Opgeleverd**
+
+- **Muziek** onder de timelapse: je kiest een bestand van je eigen toestel via de
+  systeem-bestandskiezer (mp3, m4a, wav, flac — alles wat je toestel kan decoderen).
+  Het geluid wordt gedecodeerd naar PCM, op volume gezet, aan het eind uitgefaded over
+  anderhalve seconde, precies op de videolengte ingekort en opnieuw als AAC gecodeerd.
+  Daarna wordt het als tweede spoor in dezelfde mp4 gemuxed.
+- Volumeschuif voor de muziek, en de gekozen bestandsnaam blijft zichtbaar.
+- **De laatst gebruikte timelapse-instellingen worden per serie onthouden**, inclusief
+  het muziekbestand. Ze worden bewaard op het moment dat je rendert, niet bij elke
+  schuifbeweging.
+- **Opslaggebruik per serie** in Instellingen, met het pad erbij en een knop om
+  opnieuw te tellen. De telling gaat via MediaStore, dus inclusief bewerkte
+  afgeleiden en de timelapses van die serie.
+- Het instellingenscherm is daarmee compleet: backupmap en status, herstellen,
+  ghost-dekking, dagstart, thema, opslaggebruik en de informatieregel over de galerij.
+
+## M6 — timelapse
+
+**Opgeleverd**
+
+- Video renderen uit de foto-van-de-dag, chronologisch, met een **eigen encoder**:
+  MediaCodec en MediaMuxer, waarbij elk beeld op een Canvas wordt samengesteld en via
+  een kleine OpenGL ES 2-brug op de invoer-surface van de encoder komt. Geen FFmpeg,
+  geen extra afhankelijkheden.
+- Instelscherm met snelheid (kiezen per fps of op totale lengte, de ander rekent mee),
+  beeldverhouding (9:16, 4:5, 1:1, 16:9), resolutie (720p, 1080p, 1440p), vullen of
+  passend, snijpunt bij vullen, harde cut of crossfade met instelbare overgangsduur,
+  en de datumstempel met positie, opmaak en tekstgrootte.
+- **Vullen** snijdt weg wat niet past, met een instelbaar snijpunt omdat bij portretten
+  het gezicht zelden precies in het midden zit. **Passend** laat de hele foto zien met
+  zwarte balken. Er wordt nooit uitgerekt.
+- Bij een harde cut is er precies één beeld per foto. Bij een crossfade wordt op 30
+  beelden per seconde gerenderd zodat de overgang vloeiend is, terwijl de totale
+  lengte exact hetzelfde blijft.
+- De datumstempel is wit met een subtiele schaduw, zodat hij op elke achtergrond
+  leesbaar blijft.
+- **Geheugen:** streamend verwerkt. Er zijn nooit meer dan twee gedecodeerde foto's
+  tegelijk in het geheugen, allebei al verkleind naar de doelresolutie. Een serie van
+  vijfhonderd foto's kost daarmee niet meer geheugen dan een serie van tien.
+- Voortgangsbalk met annuleren. Tijdens het renderen blijft het scherm aan; er is geen
+  foreground service en dus ook geen meldingenpermissie nodig.
+- De video komt in `Movies/Everyday/` via MediaStore en verschijnt pas in je galerij
+  als hij af is — een afgebroken render laat niets achter. Daarna kun je hem delen of
+  opnieuw maken met andere instellingen.
+- De timing van beelden, overgangen en afmetingen zit in `kern` en is door unit tests
+  gedekt.
+
+## M5 — importeren uit de galerij
+
+**Opgeleverd**
+
+- Importeren via de systeem-fotokiezer met multi-select. Die vraagt geen
+  opslagpermissie: de app krijgt alleen de foto's die je zelf aantikt.
+- De opnamedatum wordt in deze volgorde bepaald: EXIF `DateTimeOriginal`, anders uit
+  de bestandsnaam (`IMG_20240612_153045`, `PXL_…`, `2024-06-12 15.30.45`,
+  `Screenshot_…`), anders wordt hij gevraagd met de bestandsdatum voorgevuld.
+  Sla je die vraag over, dan krijgt de foto het label "datum onzeker" en is hij in
+  het dagdetail als zodanig te herkennen.
+- Elk bestand wordt gekopieerd naar de seriemap en krijgt een naam in dezelfde stijl
+  als opnames. Er wordt nooit naar de oorspronkelijke locatie verwezen, want die
+  foto kan verdwijnen.
+- Dubbelen binnen dezelfde serie (zelfde tijdstip én zelfde afmetingen) worden
+  overgeslagen.
+- GPS wordt ook bij import uit de EXIF gehaald, en de kopie gaat mee naar de
+  backupmap.
+- Na afloop een overzicht: hoeveel toegevoegd, hoeveel overgeslagen, hoeveel met een
+  onzekere datum, hoeveel mislukt.
+- De datumherkenning uit bestandsnamen zit in `kern` en wordt door unit tests gedekt,
+  inclusief de gevallen waarin hij juist niets mag herkennen.
+
+## M4 — bewerken: roteren, rechtzetten en bijsnijden
+
+**Opgeleverd**
+
+- Bewerkscherm met kwartslagen, vrij rechtzetten van -15 tot +15 graden en een
+  uitsnede die je met de hoeken versleept, met derdenlijnen als hulp.
+- **Het origineel wordt nooit overschreven.** De bewerking wordt opgeslagen als
+  parameters in de database plus een gerenderde afgeleide in
+  `Pictures/Everyday/<serie>/bewerkt/`, onder dezelfde bestandsnaam.
+- "Herstel origineel" wist de afgeleide en alle parameters in één keer.
+- Bij rechtzetten wordt automatisch de grootste rechthoek met dezelfde verhouding
+  genomen die nog binnen het gedraaide beeld past, zodat er nooit lege hoeken
+  overblijven. Die berekening zit in `kern` en wordt door unit tests gedekt.
+- De bewerkte versie wordt overal gebruikt waar de foto wordt getoond: galerij,
+  dagdetail, ghost overlay en straks de timelapse. De ghost-cache verjaart vanzelf
+  doordat de cachesleutel de bewerking meeneemt.
+- De afgeleide gaat ook naar de backupmap, in de submap `bewerkt/`.
+- De volgorde ligt vast en is uitlegbaar: eerst draaien, dan rechtzetten, dan
+  bijsnijden. De uitsnede wordt dus uitgedrukt in het rechtgezette beeld.
+
+## M3 — backupmap, kopieerwachtrij, metadata en herstellen
+
+**Opgeleverd**
+
+- **Backupmap** kiezen via de systeemkiezer, met blijvende toestemming. De map mag
+  op interne opslag of op een SD-kaart staan.
+- Na elke opname wordt het bestand automatisch naar de backupmap gekopieerd, in
+  dezelfde mapstructuur: `<backupmap>/<serie>/<bestandsnaam>`.
+- **Kopieerwachtrij** in de database: een mislukte kopie kost nooit een foto en
+  houdt de app nergens op. De wachtrij wordt afgewerkt bij het starten van de app,
+  telkens als de app weer op de voorgrond komt, en zodra een losgekoppeld volume
+  opnieuw wordt aangekoppeld.
+- Lukt er in een hele ronde niets, dan stopt het inlopen en wordt het bij de
+  volgende gelegenheid opnieuw geprobeerd — geen eindeloos doorpogen.
+- **`everyday-metadata.json`** naast de foto's, met series, foto's en dagkeuzes.
+  Alles verwijst naar mapnamen en bestandsnamen, nooit naar database-ids of uri's,
+  zodat de backupmap in zijn eentje genoeg is.
+- **Herstellen uit de backupmap**: leest de metadata terug, zet ontbrekende series
+  en foto's weer in de app en kopieert de bestanden terug. Dit is het vangnet na
+  een de-installatie of een toestelwissel.
+- **Instellingenscherm** met de backupstatus (laatste geslaagde kopie, aantal in de
+  wachtrij, oudste wachtende), knoppen "Alles opnieuw kopiëren" en "Herstellen uit
+  backupmap", de standaarddekking van de ghost overlay, de dagstart, de themakeuze
+  en de nuchtere regel over de galerij en Google Foto's.
+- Op het startscherm verschijnt pas een melding als de achterstand ouder is dan
+  drie dagen. Een SD-kaart die er even uit is, valt je dus niet lastig.
+- Definitief opgeruimde foto's worden in de backupmap naar `_verwijderd/`
+  verplaatst in plaats van gewist.
+- Databaseversie 2 met migratie voor de kopieerwachtrij.
+
+## M2 — ghost overlay, dagdetail, foto-van-de-dag, verwijderen
+
+**Opgeleverd**
+
+- **Ghost overlay**: de allerlaatst gemaakte foto van de serie ligt halftransparant
+  over het live camerabeeld. Het camerabeeld krijgt precies de beeldverhouding van
+  de sensor, zodat een foto met een afwijkende verhouding gecentreerd op hetzelfde
+  rechthoekje wordt ingepast en nooit wordt uitgerekt.
+- Schuifregelaar voor de dekking (standaard 40%, wordt onthouden), en het beeld
+  ingedrukt houden haalt de overlay even weg.
+- Bij de voorcamera wordt de overlay gespiegeld getoond, omdat het live beeld
+  gespiegeld is en de opgeslagen foto niet. Zo liggen ze op elkaar.
+- Ghost-cache op schijf: na elke opname wordt meteen een verkleinde versie
+  weggeschreven, zodat het opnamescherm niet hoeft te wachten op het decoderen van
+  een foto op volle resolutie.
+- **Dagdetail**: alle foto's van één dag naast elkaar, met tijdstip en teller.
+- **Foto-van-de-dag** kiezen met de ster; de automatisch gekozen foto draagt het
+  label "standaard", een handmatige keuze "gekozen als foto van de dag", en de ster
+  zet de keuze weer terug naar standaard.
+- **Verwijderen** met een prullenbak van 30 dagen: de foto verdwijnt uit de app maar
+  het bestand blijft staan, met "Ongedaan maken" in de melding. Bij het starten van
+  de app wordt alles opgeruimd dat de termijn voorbij is; pas dan verdwijnt het
+  bestand echt.
+- **Vervangen** opent het opnamescherm, en **delen** gaat via de Android-sharesheet.
+- Tikken op een dag in de galerij opent het dagdetail.
+
+## M1 — projectskelet, series, opnemen, galerij
+
+**Opgeleverd**
+
+- Android-project met Gradle Kotlin DSL, version catalog, `minSdk 34`, `targetSdk 37`.
+- Series aanmaken met automatisch afgeleide, unieke mapnaam.
+- Startscherm met per serie een omslagfoto, het aantal foto's, de datum van de
+  laatste foto en een directe cameraknop (foto maken in twee tikken).
+- Opnamescherm met CameraX: live beeld, sluiterknop, wisselen tussen voor- en
+  achtercamera, miniatuur van de laatste foto, en direct terug in opnamestand na
+  elke opname.
+- Foto's worden als JPG op volle resolutie weggeschreven naar
+  `Pictures/Everyday/<serie>/` via MediaStore, dus zichtbaar voor de galerij.
+- GPS wordt na elke opname uit de EXIF verwijderd.
+- Galerij per serie: de foto-van-de-dag in een raster, nieuwste boven, gegroepeerd
+  per maand met een blijvende maandkop. Dagen zonder foto worden overgeslagen.
+- Room-database met het volledige datamodel (series, foto's, dagkeuzes) en
+  `exportSchema = true`.
+- GitHub Actions-workflow die de debug-APK bouwt, de unit tests draait en de
+  samengevoegde manifest controleert op verboden permissies.
+
+**Keuzes**
+
+- **Video-encoder (sectie 10.1):** MediaCodec + MediaMuxer met frames die zelf op
+  een Canvas worden samengesteld en via EGL naar de encoder-surface gaan. Media3
+  Transformer kan wel foto's en overlays aan, maar een crossfade tussen
+  opeenvolgende foto's is daar geen eersteklas functie; zodra je toch elk frame
+  zelf bepaalt is een eigen encoderlus voorspelbaarder en scheelt het een forse
+  set dependencies waarvan de manifest uitgekamd moet worden. Wordt gebouwd in M6.
+- **Passing (10.2):** "passend" wordt letterbox met zwarte balken; "vullen" wordt
+  center-crop met een instelbaar snijpunt (boven, midden, onder), omdat een
+  portret bij exact midden door het hoofd wordt gesneden.
+- **Dagdefinitie (10.3):** instelbare dagstart, standaard 00:00 dus de gewone
+  kalenderdag. De dagsleutel wordt eenmalig bij opslaan vastgelegd.
+- **Serie hernoemen (10.4):** alleen de weergavenaam verandert; mapnaam en
+  bestandspaden blijven staan.
+- **Verwijderen (10.5):** prullenbak van 30 dagen via `verwijderdOp`; het veld zit
+  al in het datamodel. Bij definitief opruimen gaat de backupkopie naar
+  `_verwijderd/` in plaats van weg.
+- **Ghost overlay:** bron is de allerlaatst gemaakte foto van de serie. Foto's
+  worden niet gespiegeld opgeslagen; de overlay wordt straks gespiegeld getoond
+  zolang de voorcamera actief is, zodat overlay en live beeld op elkaar liggen.
+- **Geen beeldbibliotheek:** een eigen `FotoLader` in plaats van Coil of Glide,
+  omdat die de INTERNET-permissie meebrengen.
+- **Geen DI-framework:** een handgeschreven `AppContainer`.
+- **Maandkalenderweergave:** niet gebouwd. Een kalender toont per definitie de
+  lege dagen, terwijl overgeslagen dagen juist onzichtbaar horen te blijven.
+
+**Bouwketen**
+
+Na de eerste groene build is de hele keten op de huidige stabiele versies gezet:
+Gradle 9.7.1, AGP 9.4.0, Kotlin 2.4.20, KSP 2.3.12, `compileSdk` en `targetSdk`
+37, Compose BOM 2026.09.00, Room 2.8.5, CameraX 1.6.2. AGP 9 brengt Kotlin zelf
+mee, dus de losse `kotlin-android`-plugin is uit het app-buildbestand verdwenen.
+Het geëxporteerde Room-schema (versie 1) staat in `app/schemas/` en wordt door de
+build bijgewerkt zodra het verandert.
+
+**Nog niet in M1**
+
+Ghost overlay, dagdetail, foto-van-de-dag kiezen, verwijderen, vervangen,
+backupmap, bewerken, importeren, timelapse en het instellingenscherm.
