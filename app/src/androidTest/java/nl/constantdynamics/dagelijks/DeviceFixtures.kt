@@ -85,15 +85,28 @@ object DeviceFixtures {
 
     // --- Comparing two pictures of the viewfinder --------------------------------------------
 
-    /** A small grey version of a picture, ignoring a margin around the edge. */
+    /** A small grey version of (part of) a picture. */
     class Grey(val width: Int, val height: Int, val values: FloatArray)
 
-    fun grey(bitmap: Bitmap, width: Int = 120, margin: Float = 0.06f): Grey {
-        val left = (bitmap.width * margin).toInt()
-        val top = (bitmap.height * margin).toInt()
-        val inner = Bitmap.createBitmap(bitmap, left, top, bitmap.width - 2 * left, bitmap.height - 2 * top)
-        val height = (width.toFloat() * inner.height / inner.width).toInt()
-        val small = Bitmap.createScaledBitmap(inner.copy(Bitmap.Config.ARGB_8888, false), width, height, true)
+    /**
+     * Reduces the part of [bitmap] between the given fractions of its width and height
+     * to a small grey picture of [width] pixels wide.
+     */
+    fun grey(
+        bitmap: Bitmap,
+        fromX: Float = 0.06f,
+        toX: Float = 0.94f,
+        fromY: Float = 0.06f,
+        toY: Float = 0.94f,
+        width: Int = 120,
+    ): Grey {
+        val left = (bitmap.width * fromX).toInt()
+        val top = (bitmap.height * fromY).toInt()
+        val partWidth = (bitmap.width * (toX - fromX)).toInt()
+        val partHeight = (bitmap.height * (toY - fromY)).toInt()
+        val part = Bitmap.createBitmap(bitmap.copy(Bitmap.Config.ARGB_8888, false), left, top, partWidth, partHeight)
+        val height = (width.toFloat() * part.height / part.width).toInt()
+        val small = Bitmap.createScaledBitmap(part, width, height, true)
         val values = FloatArray(width * height)
         for (y in 0 until height) {
             for (x in 0 until width) {

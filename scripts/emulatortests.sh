@@ -15,6 +15,28 @@ adb pull /sdcard/Download/dagelijks-test "$out/schermafbeeldingen" >/dev/null 2>
 adb logcat -d -s DagelijksTest:I > "$out/metingen.txt" 2>/dev/null || true
 adb logcat -d > "$out/logcat.txt" 2>/dev/null || true
 
+echo "---- Uitslag per test ----"
+python3 - <<'PY'
+import glob, re, html
+total = failed = 0
+for path in sorted(glob.glob('app/build/outputs/androidTest-results/connected/**/*.xml', recursive=True)):
+    text = open(path, encoding='utf-8', errors='replace').read()
+    for case in re.finditer(r'<testcase name="([^"]+)" classname="([^"]+)"[^>]*?(/>|>(.*?)</testcase>)', text, re.S):
+        total += 1
+        body = case.group(4) or ''
+        problem = re.search(r'<(failure|error)[^>]*>(.*?)</(failure|error)>', body, re.S)
+        skipped = '<skipped' in body
+        name = f"{case.group(2).split('.')[-1]}.{case.group(1)}"
+        if problem:
+            failed += 1
+            print(f"MISLUKT  {name}")
+            for line in html.unescape(problem.group(2)).strip().splitlines()[:14]:
+                print(f"         {line[:300]}")
+        else:
+            print(f"{'overgeslagen' if skipped else 'geslaagd':<8} {name}")
+print(f"TOTAAL {total} tests op de emulator, {failed} mislukt")
+PY
+
 echo "---- Wat de tests hebben gemeten ----"
 cat "$out/metingen.txt" 2>/dev/null || true
 echo "---- Schermafbeeldingen ----"

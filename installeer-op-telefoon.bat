@@ -39,8 +39,9 @@ set "ANDROID_HOME=%SDK%"
 set "ADB=%SDK%\platform-tools\adb.exe"
 
 rem --- 3. Is a phone connected, and has it accepted this computer? -------------------
+rem "adb get-state" succeeds only when exactly one phone is connected and trusted.
 "%ADB%" start-server >nul 2>nul
-"%ADB%" devices | findstr /R /C:"device$" >nul
+"%ADB%" get-state >nul 2>nul
 if not errorlevel 1 goto bouwen
 
 "%ADB%" devices | findstr /C:"unauthorized" >nul
@@ -52,7 +53,7 @@ echo   Start dit bestand daarna opnieuw.
 goto mislukt
 
 :geen_telefoon
-echo   Er is geen telefoon gevonden.
+echo   Er is geen telefoon gevonden (of er zijn er meerdere aangesloten).
 echo.
 echo   Controleer dit:
 echo    1. De telefoon zit met een usb-kabel aan deze computer en is ontgrendeld.

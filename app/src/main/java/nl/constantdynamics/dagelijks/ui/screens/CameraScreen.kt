@@ -5,14 +5,16 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Point
 import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.Surface
+import android.view.View
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -241,17 +244,22 @@ fun CameraScreen(
     }
     DisposableEffect(session) { onDispose { session.release() } }
 
-    val rotation = rememberDisplayRotation()
-    val isLandscapeNow = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    LaunchedEffect(hasPermission, lens, aspectRatio, rotation, isLandscapeNow) {
+    // The photo is turned upright according to the display's rotation, so the camera is
+    // only started once the display has really reached the orientation this project is
+    // shot in, and it is started again whenever the display turns.
+    val displayRotation = rememberDisplayRotation()
+    val orientation = LocalConfiguration.current.orientation
+    var boundRotation by remember { mutableStateOf<Int?>(null) }
+    var rebindRequests by remember { mutableIntStateOf(0) }
+    LaunchedEffect(hasPermission, lens, aspectRatio, displayRotation, orientation, rebindRequests) {
         cameraReady = false
+        boundRotation = null
         if (!hasPermission) return@LaunchedEffect
-        // The display is still turning towards the wanted orientation: wait for it rather
-        // than starting the camera twice. (On a tablet the turn may never come; carry on then.)
-        if (isLandscapeNow != wantsLandscape) delay(700)
+        val rotation = awaitDisplayRotation(view, wantsLandscape)
         try {
             flashKind = session.bind(lifecycleOwner, previewView, activity?.window, lens, aspectRatio, rotation)
             session.setFlash(flashOn)
+            boundRotation = rotation
             cameraProblem = false
             cameraReady = true
         } catch (_: CameraUnavailableException) {
@@ -291,6 +299,12 @@ fun CameraScreen(
 
     fun shoot() {
         if (phase != Phase.Aiming || !cameraReady) return
+        if (view.display?.rotation != boundRotation) {
+            // The display turned after the camera was started: start it again first, so
+            // the photo cannot come out lying on its side.
+            rebindRequests++
+            return
+        }
         phase = Phase.Capturing
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
@@ -603,6 +617,10 @@ private fun Viewfinder(
     Box(
         modifier = modifier
             .testTag(CameraTags.VIEWFINDER)
+            // The camera view draws the whole sensor image and counts on being cut off at
+            // its edges. Compose does not do that for an embedded view by itself, so the
+            // viewfinder cuts everything to its own rectangle: what shows is what is saved.
+            .clipToBounds()
             .background(Color.Black)
             .pointerInput(Unit) {
                 // Press and hold to look at the live image without the overlay for a moment.
@@ -808,4 +826,29 @@ private fun rememberDisplayRotation(): Int {
         onDispose { manager?.unregisterDisplayListener(listener) }
     }
     return rotation
+}
+
+/**
+ * Waits until the display has turned to the wanted orientation and returns its
+ * rotation at that moment. Size and rotation are read from the display together,
+ * so they always belong to each other.
+ *
+ * Some devices (tablets, unfolded foldables) ignore a request to turn. After a few
+ * seconds the display is therefore taken as it is.
+ */
+private suspend fun awaitDisplayRotation(view: View, landscape: Boolean, patienceMillis: Long = 3_000): Int {
+    val started = SystemClock.elapsedRealtime()
+    val size = Point()
+    while (true) {
+        val display = view.display
+        val outOfPatience = SystemClock.elapsedRealtime() - started > patienceMillis
+        if (display != null) {
+            @Suppress("DEPRECATION")
+            display.getRealSize(size)
+            if ((size.x > size.y) == landscape || outOfPatience) return display.rotation
+        } else if (outOfPatience) {
+            return Surface.ROTATION_0
+        }
+        delay(50)
+    }
 }

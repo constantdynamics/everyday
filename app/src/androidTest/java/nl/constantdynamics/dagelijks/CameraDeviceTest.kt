@@ -123,6 +123,7 @@ class CameraDeviceTest {
                 add(Lens.FRONT to AspectRatio.LANDSCAPE_16_9)
             }
         }
+        val pixels = mutableMapOf<Pair<Lens, AspectRatio>, Int>()
         combinations.forEachIndexed { index, (lens, ratio) ->
             val name = "Proef $index"
             createProject(name, lens, ratio)
@@ -145,6 +146,8 @@ class CameraDeviceTest {
                 abs(shape - ratio.value) < 0.004,
             )
             assertTrue("a photo should have a serious number of pixels", bounds.outWidth >= 480 && bounds.outHeight >= 480)
+            assertEquals("$lens ${ratio.id}: a landscape project must come out wider than high", ratio.isLandscape, bounds.outWidth > bounds.outHeight)
+            pixels[lens to ratio] = bounds.outWidth * bounds.outHeight
 
             // Upright in its pixels, dated, and without anything that says where or with what it was taken.
             val exif = ExifInterface(file)
@@ -165,6 +168,15 @@ class CameraDeviceTest {
             waitForText("Nieuw project")
             runBlocking { repository.deleteProject(name) }
             compose.waitUntil(10_000) { compose.onAllNodesWithText(name).fetchSemanticsNodes().isEmpty() }
+        }
+
+        // A 16:9 photo is taken with the phone on its side and must use the sensor just as
+        // fully as a 9:16 photo taken upright. Fewer pixels would mean it was cut out of an
+        // image that was still standing upright.
+        for (lens in Lens.entries) {
+            val tall = pixels[lens to AspectRatio.PORTRAIT_9_16] ?: continue
+            val wide = pixels[lens to AspectRatio.LANDSCAPE_16_9] ?: continue
+            assertEquals("$lens: 16:9 and 9:16 should have the same number of pixels", tall, wide)
         }
     }
 
@@ -237,10 +249,16 @@ class CameraDeviceTest {
 
     private fun viewfinder(): Bitmap = compose.onNodeWithTag(CameraTags.VIEWFINDER).captureToImage().asAndroidBitmap()
 
-    @Test
-    fun theOverlayOfThePreviousPhotoCoincidesWithTheLiveImage() {
-        createProject("Uitlijning", Lens.BACK, AspectRatio.PORTRAIT_3_4)
-        openCamera("Uitlijning")
+    /**
+     * The emulator's camera looks into a room with a television that keeps changing.
+     * The left half of the picture (window, bookcase, cat) stands still, so that is
+     * the part that is compared.
+     */
+    private fun stillPart(viewfinder: Bitmap) = DeviceFixtures.grey(viewfinder, fromX = 0.04f, toX = 0.5f, fromY = 0.05f, toY = 0.95f)
+
+    private fun overlayAlignmentFor(ratio: AspectRatio, name: String): DeviceFixtures.Alignment {
+        createProject(name, Lens.BACK, ratio)
+        openCamera(name)
         Thread.sleep(1500) // let exposure settle
         shoot()
         waitForText("Klaar")
@@ -248,44 +266,85 @@ class CameraDeviceTest {
         waitForText("Nieuw project")
 
         // Pretend that photo was yesterday's, so that it becomes the overlay for today.
-        assertTrue(photoFile("Uitlijning").renameTo(photoFile("Uitlijning", today.minusDays(1))))
+        assertTrue(photoFile(name).renameTo(photoFile(name, today.minusDays(1))))
         runBlocking { repository.refresh() }
         waitForText("Vandaag nog niet")
 
-        openCamera("Uitlijning")
+        openCamera(name)
         compose.waitUntil(20_000) { compose.onAllNodesWithTag(CameraTags.OVERLAY).fetchSemanticsNodes().isNotEmpty() }
         Thread.sleep(1500)
-        DeviceFixtures.screenshot("camera-overlay-35")
+        val shape = ratio.id.replace(':', 'x')
+        DeviceFixtures.screenshot("overlay-$shape-35")
 
-        // The slider value is remembered per project.
         setOverlay(100)
-        DeviceFixtures.screenshot("camera-overlay-100")
-        val overlayOnly = DeviceFixtures.grey(viewfinder())
+        DeviceFixtures.screenshot("overlay-$shape-100")
+        val previousPhoto = stillPart(viewfinder())
 
         setOverlay(0)
-        DeviceFixtures.screenshot("camera-overlay-0")
-        val live = DeviceFixtures.grey(viewfinder())
+        DeviceFixtures.screenshot("overlay-$shape-0")
+        val live = stillPart(viewfinder())
         Thread.sleep(800)
-        val liveAgain = DeviceFixtures.grey(viewfinder())
+        val liveAgain = stillPart(viewfinder())
 
         // Only a scene that stands still can be compared with a photo taken a moment ago.
         val stillness = DeviceFixtures.likeness(live, liveAgain)
-        Log.i("DagelijksTest", "scene stillness $stillness")
-        assumeTrue("the emulator's camera scene is moving ($stillness); nothing to compare", stillness > 0.97)
+        assumeTrue("the camera scene is moving ($stillness); nothing to compare", stillness > 0.97)
 
-        val alignment = DeviceFixtures.bestAlignment(live, overlayOnly)
-        Log.i("DagelijksTest", "overlay alignment: dx=${alignment.dx} dy=${alignment.dy} likeness=${alignment.likeness} (at zero shift ${DeviceFixtures.likeness(live, overlayOnly)})")
-        assertTrue("the overlay does not look like the live image (likeness ${alignment.likeness})", alignment.likeness > 0.9)
-        // One step is 1/120 of the picture's width: less than one percent.
-        assertTrue("the overlay is shifted by ${alignment.dx}, ${alignment.dy}", abs(alignment.dx) <= 1 && abs(alignment.dy) <= 1)
+        val alignment = DeviceFixtures.bestAlignment(live, previousPhoto)
+        val shifted = DeviceFixtures.likeness(live, previousPhoto, dx = 8, dy = 0)
+        Log.i(
+            "DagelijksTest",
+            "overlay ${ratio.id}: best fit at dx=${alignment.dx} dy=${alignment.dy}, likeness ${alignment.likeness}; " +
+                "unshifted ${DeviceFixtures.likeness(live, previousPhoto)}, shifted by 8 only $shifted; stillness $stillness",
+        )
+        // The comparison must be able to notice a shift, or it proves nothing.
+        assertTrue("the scene is too plain to judge alignment on", alignment.likeness - shifted > 0.03)
 
-        // The setting sticks: it is in project.json and comes back when the camera reopens.
+        compose.onNodeWithContentDescription("Sluiten").performClick()
+        waitForText("Nieuw project")
+        runBlocking { repository.deleteProject(name) }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText(name).fetchSemanticsNodes().isEmpty() }
+        return alignment
+    }
+
+    @Test
+    fun theOverlayOfThePreviousPhotoCoincidesWithTheLiveImage() {
+        // 3:4 uses the whole sensor; the other shapes are cut out of it, and the cut of the
+        // stored photo must be exactly the cut that the viewfinder shows.
+        val shapes = listOf(AspectRatio.PORTRAIT_3_4, AspectRatio.PORTRAIT_9_16, AspectRatio.SQUARE)
+        shapes.forEachIndexed { index, ratio ->
+            val alignment = overlayAlignmentFor(ratio, "Uitlijning $index")
+            assertTrue("${ratio.id}: the overlay does not look like the live image (likeness ${alignment.likeness})", alignment.likeness > 0.9)
+            // One step is 1/120 of the compared part, well under half a percent of the picture's width.
+            assertTrue(
+                "${ratio.id}: the overlay is shifted by ${alignment.dx}, ${alignment.dy} steps",
+                abs(alignment.dx) <= 1 && abs(alignment.dy) <= 1,
+            )
+        }
+    }
+
+    @Test
+    fun theOverlaySettingIsRememberedPerProject() {
+        createProject("Regelaar", Lens.BACK, AspectRatio.PORTRAIT_3_4)
+        openCamera("Regelaar")
+        shoot()
+        waitForText("Klaar")
+        compose.onNodeWithText("Klaar").performClick()
+        waitForText("Nieuw project")
+        assertTrue(photoFile("Regelaar").renameTo(photoFile("Regelaar", today.minusDays(1))))
+        runBlocking { repository.refresh() }
+        waitForText("Vandaag nog niet")
+
+        openCamera("Regelaar")
+        waitForText("35%")
         setOverlay(60)
         compose.onNodeWithContentDescription("Sluiten").performClick()
         waitForText("Nieuw project")
-        compose.waitUntil(10_000) { repository.project("Uitlijning")?.settings?.overlayPercent == 60 }
-        assertTrue(File(folder, "Uitlijning/project.json").readText().contains("\"overlayZichtbaarheid\": 60"))
-        openCamera("Uitlijning")
+
+        // It is in project.json, and it is back when the camera opens again.
+        compose.waitUntil(10_000) { repository.project("Regelaar")?.settings?.overlayPercent == 60 }
+        assertTrue(File(folder, "Regelaar/project.json").readText().contains("\"overlayZichtbaarheid\": 60"))
+        openCamera("Regelaar")
         waitForText("60%")
     }
 }
