@@ -95,7 +95,7 @@ abstract class FixedSigningKey : ValueSource<Map<String, String>, FixedSigningKe
         }
 
         propertiesFile.writeText(
-            "# Dagelijks: de vaste ondertekensleutel van jouw app.\n" +
+            "# Everyday: de vaste ondertekensleutel van jouw app.\n" +
                 "# Bewaar deze hele map goed en maak er een reservekopie van.\n" +
                 "# Deel hem met niemand en zet hem nooit in versiebeheer.\n" +
                 "storePassword=$password\n" +
@@ -108,7 +108,7 @@ abstract class FixedSigningKey : ValueSource<Map<String, String>, FixedSigningKe
 
         println()
         println("================================================================")
-        println(" Er is een nieuwe ondertekensleutel voor Dagelijks aangemaakt in:")
+        println(" Er is een nieuwe ondertekensleutel voor Everyday aangemaakt in:")
         println("   ${directory.absolutePath}")
         println(" Maak een reservekopie van deze map (bijvoorbeeld op een usb-stick).")
         println("================================================================")

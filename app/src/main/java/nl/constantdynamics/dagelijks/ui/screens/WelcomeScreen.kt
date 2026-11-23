@@ -102,7 +102,7 @@ fun WelcomeScreen() {
             Spacer(Modifier.height(16.dp))
             Ribbon("elke dag een foto")
             Spacer(Modifier.height(10.dp))
-            RetroTitle("Dagelijks", fontSize = 60.sp, depth = 7.dp, outlineWidth = 2.5.dp)
+            RetroTitle("Everyday", fontSize = 60.sp, depth = 7.dp, outlineWidth = 2.5.dp)
             Spacer(Modifier.height(22.dp))
 
             RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {

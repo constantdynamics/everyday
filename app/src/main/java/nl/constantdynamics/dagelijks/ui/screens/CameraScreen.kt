@@ -711,7 +711,7 @@ private fun BoxScope.PermissionExplanation(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            "Dagelijks heeft de camera nodig om foto's te maken. Dat is de enige toestemming die de app vraagt.",
+            "Everyday heeft de camera nodig om foto's te maken. Dat is de enige toestemming die de app vraagt.",
             style = MaterialTheme.typography.bodyLarge,
             color = RetroColors.Cream,
             textAlign = TextAlign.Center,

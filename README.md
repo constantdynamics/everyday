@@ -1,4 +1,4 @@
-# Dagelijks
+# Everyday
 
 Een privé Android-app voor een dagelijkse foto-timelapse, in de geest van "Everyday" van
 Noah Kalina. Je maakt elke dag een foto van hetzelfde onderwerp. De foto van de vorige keer

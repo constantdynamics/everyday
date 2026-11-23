@@ -1,6 +1,6 @@
 # Changelog
 
-## Dagelijks 1.0 – opnieuw opgebouwd
+## Everyday 1.0 – opnieuw opgebouwd
 
 De app is vanaf de basis opnieuw gemaakt volgens een nieuwe opdracht. De eerdere versie in
 deze repository ("everyday": series, een Room-database, foto's zichtbaar in de galerij,
@@ -17,6 +17,7 @@ geschiedenis van de repository.
 - Werkt vanaf Android 8 (minSdk 26) in plaats van Android 14.
 - Een eigen app-id (`nl.constantdynamics.dagelijks`), zodat de app nooit botst met een
   eerder geïnstalleerde versie.
+- De app heet Everyday. De map met je foto's heet Dagelijks, zoals in de opdracht.
 - Retro vormgeving met gebundelde fonts.
 - Geen deelknop, geen importeren, geen bewerken, geen muziek.
 

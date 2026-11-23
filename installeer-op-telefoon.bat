@@ -1,13 +1,13 @@
 @echo off
-rem Builds Dagelijks and puts it on the phone that is connected with a USB cable.
+rem Builds Everyday and puts it on the phone that is connected with a USB cable.
 rem Double-click this file in Windows Explorer. See HANDLEIDING.md for the steps before it.
 setlocal
-title Dagelijks op je telefoon zetten
+title Everyday op je telefoon zetten
 cd /d "%~dp0"
 
 echo.
-echo   Dagelijks op je telefoon zetten
-echo   ===============================
+echo   Everyday op je telefoon zetten
+echo   ==============================
 echo.
 
 rem --- 1. Java: Android Studio brings its own copy, and that is the one that fits ------
@@ -100,7 +100,7 @@ if errorlevel 1 goto bouwen_mislukt
 
 if defined ADB "%ADB%" shell am start -n nl.constantdynamics.dagelijks/.MainActivity >nul 2>nul
 echo.
-echo   Klaar! Dagelijks staat op je telefoon.
+echo   Klaar! Everyday staat op je telefoon.
 echo.
 echo   Denk aan een reservekopie van de map met je ondertekensleutel:
 echo     %USERPROFILE%\Dagelijks-sleutel

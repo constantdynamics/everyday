@@ -91,7 +91,7 @@ fun HomeScreen(
                     ) {
                         Ribbon("elke dag een foto")
                         Spacer(Modifier.height(8.dp))
-                        RetroTitle("Dagelijks", fontSize = 58.sp, depth = 7.dp, outlineWidth = 2.5.dp)
+                        RetroTitle("Everyday", fontSize = 58.sp, depth = 7.dp, outlineWidth = 2.5.dp)
                     }
                 }
             }
