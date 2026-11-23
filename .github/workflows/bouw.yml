@@ -1,20 +1,29 @@
-name: Bouw APK
+name: Bouwen en testen
 
 on:
   push:
     branches: ["**"]
   workflow_dispatch:
+    inputs:
+      schermafbeeldingen:
+        description: "Schermafbeeldingen vastleggen in docs/schermafbeeldingen"
+        type: boolean
+        default: false
 
 permissions:
-  # Nodig omdat de build het geëxporteerde Room-schema zelf vastlegt: dat kan hier
-  # niet lokaal worden gegenereerd, en zonder vastgelegd schema zijn latere
-  # migraties niet te controleren.
-  contents: write
+  contents: read
+
+concurrency:
+  group: bouw-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   bouw:
-    name: Debug-APK bouwen en controleren
+    name: Bouwen, unittests en privacycontrole
     runs-on: ubuntu-latest
+    permissions:
+      # Only used to store rendered screenshots, and only when that is asked for.
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -27,124 +36,60 @@ jobs:
       - name: Gradle klaarzetten
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Debug-APK bouwen
-        run: ./gradlew --no-daemon assembleDebug
+      # The build makes a throw-away signing key in the runner's home folder. The key
+      # that signs the app on the phone only ever exists on the owner's own computer.
+      - name: App bouwen (debug en release)
+        run: ./gradlew --no-daemon assembleDebug assembleRelease
 
-      - name: Samengevoegde manifest controleren
+      - name: Privacycontrole op de APK zelf
         run: |
-          set -e
-          manifest=$(find app/build/intermediates -path '*merged_manifest*debug*' -name AndroidManifest.xml | head -1)
-          if [ -z "$manifest" ]; then
-            manifest=$(find app/build/intermediates -name AndroidManifest.xml -path '*debug*' | head -1)
-          fi
-          echo "Manifest: $manifest"
-          if grep -qE 'android\.permission\.(INTERNET|POST_NOTIFICATIONS|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|ACCESS_NETWORK_STATE)' "$manifest"; then
-            echo "FOUT: de samengevoegde manifest bevat een verboden permissie:"
-            grep -E 'uses-permission' "$manifest"
-            exit 1
-          fi
-          echo "OK: alleen deze permissies staan erin:"
-          grep -E 'uses-permission' "$manifest" || echo "(geen)"
+          bash scripts/controleer-privacy.sh app/build/outputs/apk/release/app-release.apk
+          bash scripts/controleer-privacy.sh app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Unit tests
+      - name: Unittests
         run: ./gradlew --no-daemon testDebugUnitTest
 
-      - name: Debug-APK bewaren
-        uses: actions/upload-artifact@v4
-        with:
-          name: everyday-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-
-      - name: Room-schema bewaren
+      - name: Testrapport en schermafbeeldingen bewaren
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: everyday-room-schema
-          path: app/schemas/**/*.json
+          name: unittests
+          path: |
+            app/build/reports/tests/testDebugUnitTest
+            app/build/schermafbeeldingen
           if-no-files-found: warn
 
-      - name: Geëxporteerd Room-schema controleren
+      - name: Samenvatting van de tests
+        if: always()
         run: |
-          set -e
-          schema_aanwezig() {
-            [ -d app/schemas ] && [ -n "$(find app/schemas -name '*.json' -print -quit)" ]
-          }
-          if ! schema_aanwezig; then
-            # Bij een build die grotendeels uit de cache komt draait KSP niet en
-            # wordt het schema niet opnieuw weggeschreven. Dan forceren we het.
-            echo "Geen schema na deze build; KSP wordt geforceerd opnieuw gedraaid."
-            ./gradlew --no-daemon assembleDebug --rerun-tasks > /dev/null
-          fi
-          if ! schema_aanwezig; then
-            echo "FOUT: Room heeft geen schema geëxporteerd, terwijl exportSchema aanstaat."
-            echo "Zonder geëxporteerd schema zijn latere migraties niet te controleren."
-            exit 1
-          fi
-          find app/schemas -name '*.json' -printf '%p (%s bytes)\n' | sort
+          python3 - <<'EOF'
+          import glob, re
+          total = failed = 0
+          for path in sorted(glob.glob('app/build/test-results/testDebugUnitTest/*.xml')):
+              text = open(path, encoding='utf-8').read()
+              head = re.search(r'<testsuite name="([^"]+)" tests="(\d+)" skipped="(\d+)" failures="(\d+)" errors="(\d+)"', text)
+              if not head:
+                  continue
+              bad = int(head.group(4)) + int(head.group(5))
+              total += int(head.group(2)); failed += bad
+              print(f"{head.group(1).split('.')[-1]:<28} {head.group(2):>4} tests, {bad} mislukt")
+              for case in re.finditer(r'<testcase name="([^"]+)"[^>]*>\s*<(failure|error) message="([^"]*)"', text):
+                  print(f"    MISLUKT: {case.group(1)}\n      {case.group(3)[:600]}")
+          print(f"TOTAAL {total} tests, {failed} mislukt")
+          EOF
 
-      - name: Room-schema vastleggen als het is gewijzigd
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      - name: Schermafbeeldingen vastleggen
+        if: github.event_name == 'workflow_dispatch' && inputs.schermafbeeldingen
         run: |
           set -e
-          if [ -z "$(git status --porcelain -- app/schemas)" ]; then
-            echo "Het vastgelegde schema loopt gelijk met de build."
+          python3 -m pip install --quiet pillow
+          python3 scripts/verklein-schermafbeeldingen.py app/build/schermafbeeldingen docs/schermafbeeldingen
+          if [ -z "$(git status --porcelain -- docs/schermafbeeldingen)" ]; then
+            echo "De schermafbeeldingen zijn ongewijzigd."
             exit 0
           fi
-          echo "Het schema is gewijzigd; wordt vastgelegd:"
-          git status --short -- app/schemas
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/schemas
-          git commit -m "Room-schema vastleggen zoals de build het exporteert [skip ci]"
+          git add docs/schermafbeeldingen
+          git commit -m "Schermafbeeldingen bijwerken [skip ci]"
           git push origin "HEAD:${GITHUB_REF_NAME}"
-
-  release:
-    name: Ondertekende release-APK
-    runs-on: ubuntu-latest
-    needs: bouw
-    # Draait alleen als je de keystore als repository-secret hebt gezet; zie README.
-    if: ${{ github.ref_name == 'main' || github.event_name == 'workflow_dispatch' }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Keystore uitpakken
-        id: keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.EVERYDAY_KEYSTORE_BASE64 }}
-        run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "aanwezig=nee" >> "$GITHUB_OUTPUT"
-            echo "Geen keystore-secret gevonden; release-stap wordt overgeslagen."
-            exit 0
-          fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/everyday.jks"
-          echo "aanwezig=ja" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/setup-java@v4
-        if: steps.keystore.outputs.aanwezig == 'ja'
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Gradle klaarzetten
-        if: steps.keystore.outputs.aanwezig == 'ja'
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Release-APK bouwen
-        if: steps.keystore.outputs.aanwezig == 'ja'
-        env:
-          EVERYDAY_KEYSTORE_FILE: ${{ runner.temp }}/everyday.jks
-          EVERYDAY_KEYSTORE_PASSWORD: ${{ secrets.EVERYDAY_KEYSTORE_PASSWORD }}
-          EVERYDAY_KEY_ALIAS: ${{ secrets.EVERYDAY_KEY_ALIAS }}
-          EVERYDAY_KEY_PASSWORD: ${{ secrets.EVERYDAY_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon assembleRelease
-
-      - name: Release-APK bewaren
-        if: steps.keystore.outputs.aanwezig == 'ja'
-        uses: actions/upload-artifact@v4
-        with:
-          name: everyday-release-apk
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
