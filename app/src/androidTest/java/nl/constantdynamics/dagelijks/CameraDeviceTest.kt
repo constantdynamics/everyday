@@ -280,10 +280,10 @@ class CameraDeviceTest {
     /**
      * The emulator's camera looks into a room with a television that keeps changing.
      * Only a part of the picture that stands still can be compared with a photo taken a
-     * moment ago. Of the halves that stand still, the one with the most detail in it is
-     * used: that is where a shift of the overlay would show most clearly.
+     * moment ago. Of the halves with enough detail in them for a shift of the overlay to
+     * show, the one that stands most still is used.
      */
-    private fun stillPartWithMostDetail(live: List<Bitmap>, label: String): Part? {
+    private fun stillestPartWithDetail(live: List<Bitmap>, label: String): Part? {
         class Judged(val part: Part, val stillness: Double, val detail: Double)
 
         val judged = halves.map { part ->
@@ -296,7 +296,9 @@ class CameraDeviceTest {
             Judged(part, stillness, detail)
         }
         Log.i("DagelijksTest", "overlay $label: " + judged.joinToString { "${it.part.name} stillness ${it.stillness} detail ${it.detail}" })
-        return judged.filter { it.stillness > 0.97 }.maxByOrNull { it.detail }?.part
+        // The test below asks for a drop in likeness of 0.03 when the overlay is shifted;
+        // twice that much detail leaves room to spare.
+        return judged.filter { it.detail > 0.06 }.maxByOrNull { it.stillness }?.takeIf { it.stillness > 0.97 }?.part
     }
 
     private fun overlayAlignmentFor(ratio: AspectRatio, name: String): DeviceFixtures.Alignment {
@@ -332,7 +334,7 @@ class CameraDeviceTest {
         Thread.sleep(1200)
         val liveLatest = viewfinder()
 
-        val part = stillPartWithMostDetail(listOf(live, liveLater, liveLatest), ratio.id)
+        val part = stillestPartWithDetail(listOf(live, liveLater, liveLatest), ratio.id)
         assumeTrue("${ratio.id}: the camera scene is moving everywhere; nothing to compare", part != null)
         val liveImage = part!!.of(live)
         val overlay = part.of(previousPhoto)
