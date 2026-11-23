@@ -6,8 +6,12 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import java.io.ByteArrayOutputStream
+import java.util.regex.Pattern
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -17,6 +21,27 @@ object DeviceFixtures {
     private const val SCREENSHOT_FOLDER = "/sdcard/Download/dagelijks-test"
 
     val device: UiDevice get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+
+    /**
+     * A slow emulator now and then puts a system message over the screen ("Pixel
+     * Launcher isn't responding"). It takes the keyboard focus away from the app, so it
+     * is waved away before anything that depends on focus.
+     */
+    fun dismissSystemDialogs() {
+        repeat(3) {
+            val wait = device.findObject(By.text(Pattern.compile("(?i)wait"))) ?: return
+            wait.click()
+            device.waitForIdle()
+            Thread.sleep(500)
+        }
+    }
+
+    /** Takes a screenshot named after a test that failed, to see what was on screen. */
+    class ScreenshotOnFailure : TestWatcher() {
+        override fun failed(e: Throwable?, description: Description) {
+            screenshot("mislukt-" + description.methodName.take(40))
+        }
+    }
 
     /** Saves what is on the phone's screen right now; the workflow collects these pictures afterwards. */
     fun screenshot(name: String) {

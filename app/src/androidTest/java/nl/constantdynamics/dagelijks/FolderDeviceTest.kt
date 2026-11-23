@@ -68,6 +68,9 @@ class FolderDeviceTest {
     @get:Rule(order = 2)
     val compose = createAndroidComposeRule<MainActivity>()
 
+    @get:Rule(order = 3)
+    val screenshotOnFailure = DeviceFixtures.ScreenshotOnFailure()
+
     private fun shell(command: String): String = device.executeShellCommand(command)
 
     /** What a reinstall does to the app: its own memory of the folder and the access to it are gone. */
@@ -85,7 +88,15 @@ class FolderDeviceTest {
 
     /** Presses a button of the system folder picker, which is another app. */
     private fun pressInPicker(label: String) {
-        val button = device.wait(Until.findObject(By.text(Pattern.compile("(?i)$label"))), 20_000)
+        val pattern = By.text(Pattern.compile("(?i)$label"))
+        var button = device.wait(Until.findObject(pattern), 5_000)
+        var attempts = 0
+        while (button == null && attempts < 5) {
+            // A system message may be covering the picker; wave it away and look again.
+            DeviceFixtures.dismissSystemDialogs()
+            button = device.wait(Until.findObject(pattern), 5_000)
+            attempts++
+        }
         if (button == null) {
             DeviceFixtures.screenshot("mapkiezer-niet-gevonden-${label.replace(' ', '-')}")
             throw AssertionError("The folder picker shows no \"$label\" button")
@@ -94,6 +105,7 @@ class FolderDeviceTest {
     }
 
     private fun pickDocumentsFolder(screenshotName: String) {
+        DeviceFixtures.dismissSystemDialogs()
         waitForText("Kies een map")
         compose.onNodeWithText("Kies een map").performScrollTo().performClick()
         device.waitForIdle()

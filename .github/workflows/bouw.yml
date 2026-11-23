@@ -79,9 +79,14 @@ jobs:
           EOF
 
   toestel:
-    name: Tests op een Android-emulator
+    name: Tests op een Android-emulator (Android API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Android 14 and Android 16: an established version and a recent one.
+        api-level: [34, 36]
 
     steps:
       - uses: actions/checkout@v5
@@ -108,7 +113,7 @@ jobs:
       - name: Tests op de emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -120,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: emulator
+          name: emulator-${{ matrix.api-level }}
           path: |
             app/build/emulator
             app/build/reports/androidTests
@@ -147,7 +152,7 @@ jobs:
           set -e
           python3 -m pip install --quiet pillow
           python3 scripts/verklein-schermafbeeldingen.py docs/schermafbeeldingen \
-            artefacten/unittests/schermafbeeldingen artefacten/emulator/emulator/schermafbeeldingen
+            artefacten/unittests/schermafbeeldingen artefacten/emulator-34/emulator/schermafbeeldingen
           if [ -z "$(git status --porcelain -- docs/schermafbeeldingen)" ]; then
             echo "De schermafbeeldingen zijn ongewijzigd."
             exit 0

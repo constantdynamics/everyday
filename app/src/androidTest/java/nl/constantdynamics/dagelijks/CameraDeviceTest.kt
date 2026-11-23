@@ -75,6 +75,9 @@ class CameraDeviceTest {
     @get:Rule(order = 2)
     val compose = createAndroidComposeRule<MainActivity>()
 
+    @get:Rule(order = 3)
+    val screenshotOnFailure = DeviceFixtures.ScreenshotOnFailure()
+
     private val repository: ProjectRepository
         get() = (app.container.folder.value as FolderState.Ready).repository
 
@@ -102,6 +105,19 @@ class CameraDeviceTest {
 
     private fun shoot() {
         compose.onNodeWithTag(CameraTags.SHUTTER).performClick()
+    }
+
+    /**
+     * Presses a hardware key the way a finger would. A key goes to whichever window has
+     * the focus, so the app must really be in front first.
+     */
+    private fun pressKey(keyCode: Int) {
+        DeviceFixtures.dismissSystemDialogs()
+        compose.waitUntil(15_000) {
+            DeviceFixtures.dismissSystemDialogs()
+            compose.activity.hasWindowFocus()
+        }
+        DeviceFixtures.device.pressKeyCode(keyCode)
     }
 
     private fun photoFile(project: String, day: LocalDate = today) = File(folder, "$project/$day.jpg")
@@ -188,7 +204,7 @@ class CameraDeviceTest {
         openCamera("Tuin")
 
         // First photo of the day, taken with the volume-up button: stored without any question.
-        DeviceFixtures.device.pressKeyCode(KeyEvent.KEYCODE_VOLUME_UP)
+        pressKey(KeyEvent.KEYCODE_VOLUME_UP)
         waitForText("Klaar")
         val file = photoFile("Tuin")
         assertTrue(file.isFile)
@@ -197,7 +213,7 @@ class CameraDeviceTest {
         // Again, now with volume-down: the app asks before touching today's photo.
         compose.onNodeWithText("Opnieuw").performClick()
         waitForShutter()
-        DeviceFixtures.device.pressKeyCode(KeyEvent.KEYCODE_VOLUME_DOWN)
+        pressKey(KeyEvent.KEYCODE_VOLUME_DOWN)
         waitForText("Foto vervangen?")
         DeviceFixtures.screenshot("camera-vraag-vervangen")
         compose.onNodeWithText("Nee, bewaar de oude").performClick()

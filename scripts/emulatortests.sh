@@ -7,6 +7,9 @@ set -uo pipefail
 out=app/build/emulator
 mkdir -p "$out"
 
+# A slow emulator shows "isn't responding" messages that get in the way of the tests.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb logcat -c || true
 ./gradlew --no-daemon connectedDebugAndroidTest
 status=$?
