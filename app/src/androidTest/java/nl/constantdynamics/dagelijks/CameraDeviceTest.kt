@@ -283,15 +283,17 @@ class CameraDeviceTest {
      * moment ago. Of the halves that stand still, the one with the most detail in it is
      * used: that is where a shift of the overlay would show most clearly.
      */
-    private fun stillPartWithMostDetail(live: Bitmap, liveAgain: Bitmap, label: String): Part? {
+    private fun stillPartWithMostDetail(live: List<Bitmap>, label: String): Part? {
         class Judged(val part: Part, val stillness: Double, val detail: Double)
 
         val judged = halves.map { part ->
-            val first = part.of(live)
-            val second = part.of(liveAgain)
+            val moments = live.map(part::of)
+            val first = moments.first()
+            // As still as its least still moment.
+            val stillness = moments.drop(1).minOf { DeviceFixtures.likeness(first, it) }
             // How clearly a shift of 8 steps shows, in the direction in which it shows least.
             val detail = 1 - maxOf(DeviceFixtures.likeness(first, first, dx = 8), DeviceFixtures.likeness(first, first, dy = 8))
-            Judged(part, DeviceFixtures.likeness(first, second), detail)
+            Judged(part, stillness, detail)
         }
         Log.i("DagelijksTest", "overlay $label: " + judged.joinToString { "${it.part.name} stillness ${it.stillness} detail ${it.detail}" })
         return judged.filter { it.stillness > 0.97 }.maxByOrNull { it.detail }?.part
@@ -323,11 +325,14 @@ class CameraDeviceTest {
 
         setOverlay(0)
         DeviceFixtures.screenshot("overlay-$shape-0")
+        // Three moments spread over a few seconds, to be sure what moves and what does not.
         val live = viewfinder()
-        Thread.sleep(800)
-        val liveAgain = viewfinder()
+        Thread.sleep(1200)
+        val liveLater = viewfinder()
+        Thread.sleep(1200)
+        val liveLatest = viewfinder()
 
-        val part = stillPartWithMostDetail(live, liveAgain, ratio.id)
+        val part = stillPartWithMostDetail(listOf(live, liveLater, liveLatest), ratio.id)
         assumeTrue("${ratio.id}: the camera scene is moving everywhere; nothing to compare", part != null)
         val liveImage = part!!.of(live)
         val overlay = part.of(previousPhoto)
