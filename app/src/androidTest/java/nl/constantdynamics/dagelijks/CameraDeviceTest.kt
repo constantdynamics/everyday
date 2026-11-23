@@ -265,12 +265,37 @@ class CameraDeviceTest {
 
     private fun viewfinder(): Bitmap = compose.onNodeWithTag(CameraTags.VIEWFINDER).captureToImage().asAndroidBitmap()
 
+    /** A part of the viewfinder, in fractions of its width and height. */
+    private class Part(val name: String, val fromX: Float, val toX: Float, val fromY: Float, val toY: Float) {
+        fun of(viewfinder: Bitmap) = DeviceFixtures.grey(viewfinder, fromX, toX, fromY, toY)
+    }
+
+    private val halves = listOf(
+        Part("left half", 0.04f, 0.5f, 0.05f, 0.95f),
+        Part("right half", 0.5f, 0.96f, 0.05f, 0.95f),
+        Part("top half", 0.05f, 0.95f, 0.04f, 0.5f),
+        Part("bottom half", 0.05f, 0.95f, 0.5f, 0.96f),
+    )
+
     /**
      * The emulator's camera looks into a room with a television that keeps changing.
-     * The left half of the picture (window, bookcase, cat) stands still, so that is
-     * the part that is compared.
+     * Only a part of the picture that stands still can be compared with a photo taken a
+     * moment ago. Of the halves that stand still, the one with the most detail in it is
+     * used: that is where a shift of the overlay would show most clearly.
      */
-    private fun stillPart(viewfinder: Bitmap) = DeviceFixtures.grey(viewfinder, fromX = 0.04f, toX = 0.5f, fromY = 0.05f, toY = 0.95f)
+    private fun stillPartWithMostDetail(live: Bitmap, liveAgain: Bitmap, label: String): Part? {
+        class Judged(val part: Part, val stillness: Double, val detail: Double)
+
+        val judged = halves.map { part ->
+            val first = part.of(live)
+            val second = part.of(liveAgain)
+            // How clearly a shift of 8 steps shows, in the direction in which it shows least.
+            val detail = 1 - maxOf(DeviceFixtures.likeness(first, first, dx = 8), DeviceFixtures.likeness(first, first, dy = 8))
+            Judged(part, DeviceFixtures.likeness(first, second), detail)
+        }
+        Log.i("DagelijksTest", "overlay $label: " + judged.joinToString { "${it.part.name} stillness ${it.stillness} detail ${it.detail}" })
+        return judged.filter { it.stillness > 0.97 }.maxByOrNull { it.detail }?.part
+    }
 
     private fun overlayAlignmentFor(ratio: AspectRatio, name: String): DeviceFixtures.Alignment {
         createProject(name, Lens.BACK, ratio)
@@ -294,27 +319,31 @@ class CameraDeviceTest {
 
         setOverlay(100)
         DeviceFixtures.screenshot("overlay-$shape-100")
-        val previousPhoto = stillPart(viewfinder())
+        val previousPhoto = viewfinder()
 
         setOverlay(0)
         DeviceFixtures.screenshot("overlay-$shape-0")
-        val live = stillPart(viewfinder())
+        val live = viewfinder()
         Thread.sleep(800)
-        val liveAgain = stillPart(viewfinder())
+        val liveAgain = viewfinder()
 
-        // Only a scene that stands still can be compared with a photo taken a moment ago.
-        val stillness = DeviceFixtures.likeness(live, liveAgain)
-        assumeTrue("the camera scene is moving ($stillness); nothing to compare", stillness > 0.97)
+        val part = stillPartWithMostDetail(live, liveAgain, ratio.id)
+        assumeTrue("${ratio.id}: the camera scene is moving everywhere; nothing to compare", part != null)
+        val liveImage = part!!.of(live)
+        val overlay = part.of(previousPhoto)
 
-        val alignment = DeviceFixtures.bestAlignment(live, previousPhoto)
-        val shifted = DeviceFixtures.likeness(live, previousPhoto, dx = 8, dy = 0)
+        val alignment = DeviceFixtures.bestAlignment(liveImage, overlay)
+        val shifted = maxOf(
+            DeviceFixtures.likeness(liveImage, overlay, dx = 8),
+            DeviceFixtures.likeness(liveImage, overlay, dy = 8),
+        )
         Log.i(
             "DagelijksTest",
-            "overlay ${ratio.id}: best fit at dx=${alignment.dx} dy=${alignment.dy}, likeness ${alignment.likeness}; " +
-                "unshifted ${DeviceFixtures.likeness(live, previousPhoto)}, shifted by 8 only $shifted; stillness $stillness",
+            "overlay ${ratio.id}: compared on the ${part.name}; best fit at dx=${alignment.dx} dy=${alignment.dy}, " +
+                "likeness ${alignment.likeness}; unshifted ${DeviceFixtures.likeness(liveImage, overlay)}, shifted by 8 at most $shifted",
         )
         // The comparison must be able to notice a shift, or it proves nothing.
-        assertTrue("the scene is too plain to judge alignment on", alignment.likeness - shifted > 0.03)
+        assertTrue("${ratio.id}: the scene is too plain to judge alignment on", alignment.likeness - shifted > 0.03)
 
         compose.onNodeWithContentDescription("Sluiten").performClick()
         waitForText("Nieuw project")
@@ -323,21 +352,35 @@ class CameraDeviceTest {
         return alignment
     }
 
-    @Test
-    fun theOverlayOfThePreviousPhotoCoincidesWithTheLiveImage() {
-        // 3:4 uses the whole sensor; the other shapes are cut out of it, and the cut of the
-        // stored photo must be exactly the cut that the viewfinder shows.
-        val shapes = listOf(AspectRatio.PORTRAIT_3_4, AspectRatio.PORTRAIT_9_16, AspectRatio.SQUARE)
-        shapes.forEachIndexed { index, ratio ->
-            val alignment = overlayAlignmentFor(ratio, "Uitlijning $index")
-            assertTrue("${ratio.id}: the overlay does not look like the live image (likeness ${alignment.likeness})", alignment.likeness > 0.9)
-            // One step is 1/120 of the compared part, well under half a percent of the picture's width.
-            assertTrue(
-                "${ratio.id}: the overlay is shifted by ${alignment.dx}, ${alignment.dy} steps",
-                abs(alignment.dx) <= 1 && abs(alignment.dy) <= 1,
-            )
-        }
+    /**
+     * The stored photo, laid over the live image, must be exactly the picture that the
+     * viewfinder shows: same cut, same size, same way up.
+     */
+    private fun assertOverlayCoincides(ratio: AspectRatio) {
+        val alignment = overlayAlignmentFor(ratio, "Uitlijning")
+        assertTrue("${ratio.id}: the overlay does not look like the live image (likeness ${alignment.likeness})", alignment.likeness > 0.9)
+        // One step is 1/120 of the compared part, well under half a percent of the picture's width.
+        assertTrue(
+            "${ratio.id}: the overlay is shifted by ${alignment.dx}, ${alignment.dy} steps",
+            abs(alignment.dx) <= 1 && abs(alignment.dy) <= 1,
+        )
     }
+
+    // 3:4 uses the whole sensor; the other shapes are cut out of it, and the cut of the stored
+    // photo must be exactly the cut that the viewfinder shows. 16:9 is shot with the screen
+    // turned on its side, where the camera image has to be turned along with it.
+
+    @Test
+    fun theOverlayCoincidesWithTheLiveImage_3x4() = assertOverlayCoincides(AspectRatio.PORTRAIT_3_4)
+
+    @Test
+    fun theOverlayCoincidesWithTheLiveImage_9x16() = assertOverlayCoincides(AspectRatio.PORTRAIT_9_16)
+
+    @Test
+    fun theOverlayCoincidesWithTheLiveImage_1x1() = assertOverlayCoincides(AspectRatio.SQUARE)
+
+    @Test
+    fun theOverlayCoincidesWithTheLiveImage_16x9() = assertOverlayCoincides(AspectRatio.LANDSCAPE_16_9)
 
     @Test
     fun theOverlaySettingIsRememberedPerProject() {
