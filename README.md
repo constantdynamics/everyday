@@ -11,6 +11,17 @@ een usb-kabel op je eigen toestel.
 **Zelf installeren? Lees [HANDLEIDING.md](HANDLEIDING.md).** Wat je daarna kunt nalopen staat
 in [TESTLIJST.md](TESTLIJST.md).
 
+## Zo ziet het eruit
+
+<p>
+  <img src="docs/schermafbeeldingen/03-start.jpg" width="200" alt="Startscherm met drie projecten">
+  <img src="docs/schermafbeeldingen/11-camera.jpg" width="200" alt="Camera met de vorige foto half doorzichtig over het beeld">
+  <img src="docs/schermafbeeldingen/05-galerij.jpg" width="200" alt="Galerij van een project">
+  <img src="docs/schermafbeeldingen/09-timelapse.jpg" width="200" alt="Timelapse-instellingen">
+</p>
+
+De plaatjes in `docs/schermafbeeldingen` worden door de tests zelf gemaakt, met voorbeeldfoto's.
+
 ## Wat de app doet
 
 - **Projecten** naast elkaar, bijvoorbeeld "Mijn gezicht" (selfiecamera) en "De boom in de
