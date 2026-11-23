@@ -5,9 +5,9 @@ Lukt iets niet? Schrijf op bij welk punt het misging en wat je zag.
 
 ## Stap 1 – Installeren
 
-- [ ] De app staat op je telefoon met de naam **Dagelijks** en een mintgroen icoon met een stapel foto's.
+- [ ] De app staat op je telefoon met de naam **Everyday** en een mintgroen icoon met een stapel foto's.
 - [ ] De app start zonder om toestemmingen te vragen.
-- [ ] In **Instellingen → Apps → Dagelijks → Rechten** staat alleen **Camera** (en die staat nog op "niet toegestaan").
+- [ ] In **Instellingen → Apps → Everyday → Rechten** staat alleen **Camera** (en die staat nog op "niet toegestaan").
 - [ ] Dubbelklik nog een keer op `installeer-op-telefoon`. De app wordt bijgewerkt zonder dat je hem eerst hoeft te verwijderen.
 - [ ] Op je computer bestaat de map `C:\Users\<jouw naam>\Dagelijks-sleutel` met twee bestanden.
 
@@ -66,7 +66,7 @@ Met twee of drie foto's is de video kort, maar het werkt hetzelfde.
 ## Stap 7 – Vormgeving
 
 - [ ] Mintgroene achtergrond, koraalrode en mosterdgele knoppen, marineblauwe randen, crème kaarten.
-- [ ] De titel **Dagelijks** heeft dikke letters met een schaduw eronder en een dunne lichte rand.
+- [ ] De titel **Everyday** heeft dikke letters met een schaduw eronder en een dunne lichte rand.
 - [ ] Boven de titel hangt een lint met "elke dag een foto".
 - [ ] Het camerascherm is rustig en donker; alleen de knoppen en de regelaar zijn in stijl.
 - [ ] Alle tekst is Nederlands.
@@ -74,6 +74,6 @@ Met twee of drie foto's is de video kort, maar het werkt hetzelfde.
 ## Privacy en opslag
 
 - [ ] Zet je telefoon in de vliegtuigmodus. Alles in de app werkt gewoon door.
-- [ ] Open je galerij en Google Foto's. De foto's uit Dagelijks staan er niet in.
+- [ ] Open je galerij en Google Foto's. De foto's uit Everyday staan er niet in.
 - [ ] Sluit je telefoon aan op je computer. In `Documents\Dagelijks` staan je foto's als `JJJJ-MM-DD.jpg`.
 - [ ] Verwijder de app van je telefoon en installeer hem opnieuw. Kies dezelfde map. Alle projecten, foto's en de stand van de regelaar zijn terug.

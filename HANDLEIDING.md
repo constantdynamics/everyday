@@ -1,7 +1,9 @@
-# Handleiding Dagelijks
+# Handleiding Everyday
 
 Zo zet je de app op je telefoon, werk je hem bij en maak je een reservekopie van je foto's.
 Je hoeft niet te kunnen programmeren. Alles wat je moet doen staat hier stap voor stap.
+
+De app heet **Everyday**. De map waarin hij je foto's bewaart heet **Dagelijks**.
 
 **Wat je nodig hebt**
 
@@ -36,18 +38,12 @@ bouwstenen meebrengt.
 1. Open <https://github.com/constantdynamics/everyday> in je browser.
 2. Klik op de groene knop **Code** en kies **Download ZIP**.
 3. Open je map **Downloads**, klik met de rechtermuisknop op het zip-bestand en kies **Alles uitpakken…**.
-4. Kies als doelmap `C:\Dagelijks` en klik op **Uitpakken**.
-5. Open `C:\Dagelijks` en ga de map in die erin staat. Daar hoort onder meer het bestand
+4. Kies als doelmap `C:\Everyday` en klik op **Uitpakken**.
+5. Open `C:\Everyday` en ga de map in die erin staat. Daar hoort onder meer het bestand
    **installeer-op-telefoon** te staan.
 
-Gebruik een korte map zoals `C:\Dagelijks`. Zet hem niet in OneDrive of op je bureaublad:
+Gebruik een korte map zoals `C:\Everyday`. Zet hem niet in OneDrive of op je bureaublad:
 daar gaat het bouwen vaak mis.
-
-> **Staat het bestand `installeer-op-telefoon` er niet?** Dan heb je de vorige versie van de
-> app gedownload. De nieuwe versie staat dan nog klaar als voorstel ("pull request") op
-> GitHub. Open op de pagina uit punt 1 het tabblad **Pull requests**, open het voorstel,
-> klik onderaan op **Ready for review** en daarna op **Merge pull request** en
-> **Confirm merge**. Download de zip daarna opnieuw.
 
 ### Stap 3. Je telefoon voorbereiden
 
@@ -70,7 +66,7 @@ Je telefoon moet toestaan dat je computer er een app op zet. Dat heet *USB-fouto
 ### Stap 4. De app bouwen en installeren
 
 1. Zorg dat je telefoon is aangesloten en ontgrendeld.
-2. Open de map `C:\Dagelijks` in de Verkenner en ga de map in die erin staat.
+2. Open de map `C:\Everyday` in de Verkenner en ga de map in die erin staat.
 3. Dubbelklik op **installeer-op-telefoon** (het volledige bestand heet `installeer-op-telefoon.bat`).
 4. Windows waarschuwt bij elk programmaatje dat van internet komt. Zegt Windows
    "Windows heeft uw pc beschermd"? Klik dan op **Meer informatie** en op **Toch uitvoeren**.
@@ -82,7 +78,7 @@ Je telefoon moet toestaan dat je computer er een app op zet. Dat heet *USB-fouto
    omdat er eenmalig veel wordt gedownload.
 7. Vraagt je telefoon of de app naar Google mag worden gestuurd voor een veiligheidscontrole
    (Play Protect)? Kies **Niet verzenden**. Vraagt hij of je de app toch wilt installeren? Kies **Toch installeren**.
-8. Staat er in het venster **Klaar! Dagelijks staat op je telefoon.**, dan is het gelukt.
+8. Staat er in het venster **Klaar! Everyday staat op je telefoon.**, dan is het gelukt.
    De app opent vanzelf op je telefoon.
 
 > **Je ondertekensleutel.** Bij de eerste keer bouwen is er een map
@@ -102,7 +98,7 @@ Je telefoon moet toestaan dat je computer er een app op zet. Dat heet *USB-fouto
 3. Tik onderaan op **Deze map gebruiken** en daarna op **Toestaan**.
 4. Je bent nu op het startscherm. Tik op **Nieuw project** om te beginnen.
 
-De eerste keer dat je de camera opent, vraagt Android of Dagelijks de camera mag gebruiken.
+De eerste keer dat je de camera opent, vraagt Android of Everyday de camera mag gebruiken.
 Kies **Tijdens gebruik van de app**. Dat is de enige toestemming die de app vraagt.
 
 ---
@@ -111,7 +107,7 @@ Kies **Tijdens gebruik van de app**. Dat is de enige toestemming die de app vraa
 
 Als er een nieuwe versie van de app is:
 
-1. Download de zip opnieuw (stap 2) en pak hem uit in `C:\Dagelijks`.
+1. Download de zip opnieuw (stap 2) en pak hem uit in `C:\Everyday`.
    Kies **Bestanden in de doelmap vervangen** als Windows daarom vraagt.
 2. Sluit je telefoon aan en dubbelklik weer op **installeer-op-telefoon**.
 
@@ -197,6 +193,6 @@ De app is zijn toegang tot de map kwijt, bijvoorbeeld na opnieuw installeren of 
 is hernoemd. Kies dezelfde map opnieuw; er gaat niets verloren.
 
 **Liever via Android Studio zelf?**
-Start Android Studio, kies **Open** en wijs de map in `C:\Dagelijks` aan. Wacht tot onderin
+Start Android Studio, kies **Open** en wijs de map in `C:\Everyday` aan. Wacht tot onderin
 "Gradle sync" klaar is. Sluit je telefoon aan en klik bovenin op de groene driehoek ▶.
 Dat doet hetzelfde als het bestand **installeer-op-telefoon**, met dezelfde sleutel.
