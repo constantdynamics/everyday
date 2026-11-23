@@ -205,9 +205,10 @@ fun CameraScreen(
     // --- Window behaviour while the camera is open ------------------------------------------
     val wantsLandscape = aspectRatio.isLandscape
     DisposableEffect(activity, wantsLandscape) {
-        // A landscape project is shot with the phone on its side; everything else upright.
+        // A landscape project is shot with the phone on its side (either way round, the
+        // screen follows); everything else upright.
         activity?.requestedOrientation = if (wantsLandscape) {
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         } else {
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
