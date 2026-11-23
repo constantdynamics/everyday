@@ -63,6 +63,15 @@ class AppContainer(private val application: Application) {
         }
     }
 
+    /**
+     * Looks again whether a folder was chosen earlier, the way a freshly started app
+     * does. Used by tests to play "the app was reinstalled".
+     */
+    suspend fun reloadFolder() {
+        val opened = runCatching { storageAccess.openStored() }.getOrNull()
+        if (opened == null) folderState.value = FolderState.Missing else use(opened)
+    }
+
     /** Called with the result of the system folder picker. */
     suspend fun chooseFolder(pickedTreeUri: Uri): StorageAccess.PickResult {
         val result = storageAccess.adopt(pickedTreeUri)

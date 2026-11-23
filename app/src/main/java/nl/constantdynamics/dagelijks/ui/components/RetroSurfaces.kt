@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -43,7 +42,8 @@ object RetroDefaults {
  * shadow that is simply the same shape shifted down and to the right.
  *
  * Room for the shadow is reserved inside the modifier, so neighbours never overlap it.
- * [pressed] moves the piece into its shadow, the way a real button goes down.
+ * [pressed] moves the piece into its shadow, the way a real button goes down. The face
+ * gets the same fine [grain] as the background, like printed card.
  */
 fun Modifier.retroBox(
     fill: Color,
@@ -53,6 +53,7 @@ fun Modifier.retroBox(
     shadow: DpOffset = RetroDefaults.Shadow,
     shadowColor: Color = RetroColors.Navy,
     pressed: Float = 0f,
+    grain: Boolean = true,
 ): Modifier = this
     .padding(end = shadow.x, bottom = shadow.y)
     .drawBehind {
@@ -61,6 +62,7 @@ fun Modifier.retroBox(
         val faceOffset = shadowOffset * pressed
         if (shadowColor.alpha > 0f) drawRoundRect(shadowColor, topLeft = shadowOffset, size = size, cornerRadius = radius)
         drawRoundRect(fill, topLeft = faceOffset, size = size, cornerRadius = radius)
+        if (grain) drawRoundRect(grainBrush, topLeft = faceOffset, size = size, cornerRadius = radius)
         val stroke = border.toPx()
         if (stroke > 0f) {
             drawRoundRect(
@@ -102,15 +104,15 @@ fun RetroBackground(
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
-        modifier = modifier
-            .drawBehind {
-                drawRect(color)
-                if (sunburst) {
-                    // The rays fan out from above the title, so they frame it without crossing the text.
-                    drawSunburst(Offset(size.width * 0.5f, size.height * 0.16f), rayColor)
-                }
+        modifier = modifier.drawBehind {
+            drawRect(color)
+            if (sunburst) {
+                // The rays fan out from above the title, so they frame it without crossing the text.
+                drawSunburst(Offset(size.width * 0.5f, size.height * 0.16f), rayColor)
             }
-            .grain(),
+            // The grain lies on the paper, not on what is put on top of it: photos stay clean.
+            drawRect(grainBrush)
+        },
         content = content,
     )
 }
@@ -131,13 +133,9 @@ private fun DrawScope.drawSunburst(center: Offset, color: Color, rays: Int = 14)
     }
 }
 
-/** A subtle paper grain laid over whatever is drawn underneath. */
-fun Modifier.grain(strength: Float = 1f): Modifier = drawWithCache {
-    val brush = ShaderBrush(ImageShader(grainTile, TileMode.Repeated, TileMode.Repeated))
-    onDrawWithContent {
-        drawContent()
-        drawRect(brush = brush, alpha = strength)
-    }
+/** The grain as a repeating pattern, to be drawn over a flat colour. */
+private val grainBrush: ShaderBrush by lazy {
+    ShaderBrush(ImageShader(grainTile, TileMode.Repeated, TileMode.Repeated))
 }
 
 /** A small tile of random light and dark specks, made once and repeated across the screen. */

@@ -91,7 +91,6 @@ fun RetroButton(
     Box(
         modifier = modifier
             .defaultMinSize(minHeight = 58.dp)
-            .alpha(if (enabled) 1f else 0.55f)
             .clickable(
                 interactionSource = interaction,
                 indication = null,
@@ -99,20 +98,28 @@ fun RetroButton(
                 role = Role.Button,
                 onClick = onClick,
             )
-            .retroBox(fill = color, corner = 18.dp, pressed = pressed)
+            .retroBox(
+                fill = if (enabled) color else RetroColors.CreamDark,
+                corner = 18.dp,
+                borderColor = if (enabled) RetroColors.Navy else RetroColors.Navy.copy(alpha = 0.45f),
+                shadowColor = if (enabled) RetroColors.Navy else RetroColors.Navy.copy(alpha = 0.3f),
+                pressed = pressed,
+            )
             .offset { IntOffset((shadow.x * pressed).roundToPx(), (shadow.y * pressed).roundToPx()) }
             .padding(horizontal = 22.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
+        // A button that cannot be used yet looks like plain card with faded lettering.
+        val shownColor = if (enabled) contentColor else RetroColors.Navy.copy(alpha = 0.45f)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             if (icon != null) {
-                Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(24.dp))
+                Icon(icon, contentDescription = null, tint = shownColor, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(10.dp))
             }
             Text(
                 text = text,
                 style = RetroType.button,
-                color = contentColor,
+                color = shownColor,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,

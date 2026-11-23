@@ -133,7 +133,8 @@ class ScreensTest {
 
     @Test
     fun home() {
-        show("03-start") { HomeScreen(repository, repository.projects.value, {}, {}, {}, {}) }
+        val projects = repository.projects.value
+        show("03-start") { HomeScreen(repository, projects, {}, {}, {}, {}) }
         compose.onNodeWithText("Mijn gezicht").assertIsDisplayed()
         compose.onNodeWithText("Vandaag gelukt").assertIsDisplayed()
     }

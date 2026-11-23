@@ -267,8 +267,11 @@ android {
     }
 
     lint {
-        abortOnError = false
+        abortOnError = true
         checkReleaseBuilds = false
+        // The adaptive icon lives in mipmap-anydpi-v26, where every tool expects it,
+        // even though minSdk 26 makes the qualifier redundant on paper.
+        disable += "ObsoleteSdkInt"
     }
 }
 
@@ -319,6 +322,8 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
 
     androidTestImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

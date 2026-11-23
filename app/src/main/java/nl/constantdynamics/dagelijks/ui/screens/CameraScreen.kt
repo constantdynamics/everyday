@@ -1,6 +1,7 @@
 package nl.constantdynamics.dagelijks.ui.screens
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
@@ -152,6 +153,7 @@ private sealed interface Phase {
  * rectangle, so the two coincide. For the front camera the overlay is mirrored,
  * because the live image is mirrored there and the stored photo is not.
  */
+@SuppressLint("SourceLockedOrientationActivity") // a daily photo needs the same orientation every day
 @Composable
 fun CameraScreen(
     repository: ProjectRepository,

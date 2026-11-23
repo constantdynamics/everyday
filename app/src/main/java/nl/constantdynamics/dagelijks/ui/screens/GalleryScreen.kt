@@ -58,6 +58,7 @@ import nl.constantdynamics.dagelijks.ui.components.RetroCard
 import nl.constantdynamics.dagelijks.ui.components.RetroDialog
 import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
 import nl.constantdynamics.dagelijks.ui.components.RetroTextField
+import nl.constantdynamics.dagelijks.ui.components.Ribbon
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
 import nl.constantdynamics.dagelijks.ui.components.retroBox
 import nl.constantdynamics.dagelijks.ui.theme.RetroColors
@@ -115,18 +116,20 @@ fun GalleryScreen(
                         Spacer(Modifier.width(8.dp))
                         RetroIconButton(AppIcons.Edit, "Project aanpassen", onClick = { showSettings = true }, size = 44.dp)
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = when (val first = project.photos.firstOrNull()) {
-                                null -> "Nog geen foto's"
-                                else -> "${DutchText.photoCount(project.photos.size)} sinds ${Format.date(first.date)}"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f),
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Ribbon(
+                            text = if (project.photos.isEmpty()) "nog leeg" else DutchText.photoCount(project.photos.size),
+                            color = RetroColors.Mustard,
+                            textColor = RetroColors.Navy,
+                            tilt = -2f,
                         )
+                        Spacer(Modifier.weight(1f))
                         if (takenToday) {
                             Pill("Vandaag gelukt", icon = AppIcons.Check, color = RetroColors.Cream)
                         }
+                    }
+                    project.photos.firstOrNull()?.let { first ->
+                        Text("sinds ${Format.date(first.date)}", style = MaterialTheme.typography.titleSmall)
                     }
                     RetroButton(
                         text = if (takenToday) "Foto van vandaag opnieuw" else "Maak de foto van vandaag",

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
+import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -53,10 +54,10 @@ class StorageAccess(private val context: Context) {
             RootResolver.ensureNoMedia(tree, rootId)
 
             val previous = preferences.getString(KEY_TREE_URI, null)?.let(Uri::parse)
-            preferences.edit()
-                .putString(KEY_TREE_URI, pickedTreeUri.toString())
-                .putString(KEY_ROOT_ID, rootId)
-                .apply()
+            preferences.edit {
+                putString(KEY_TREE_URI, pickedTreeUri.toString())
+                putString(KEY_ROOT_ID, rootId)
+            }
             if (previous != null && previous != pickedTreeUri) {
                 runCatching { resolver.releasePersistableUriPermission(previous, ACCESS_FLAGS) }
             }

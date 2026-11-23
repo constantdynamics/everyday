@@ -1,5 +1,6 @@
 package nl.constantdynamics.dagelijks
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
@@ -21,6 +22,7 @@ class MainActivity : ComponentActivity() {
     private val shutterKeys = ShutterKeys()
 
     /** The whole interface is Dutch, whatever language the phone is set to. */
+    @SuppressLint("AppBundleLocaleChanges") // installed as a plain APK, never split by language
     override fun attachBaseContext(newBase: Context) {
         val configuration = Configuration(newBase.resources.configuration)
         configuration.setLocale(DagelijksApp.DUTCH)
@@ -51,6 +53,7 @@ class MainActivity : ComponentActivity() {
      * the volume. A bluetooth selfie remote works the same way: it poses as a volume
      * button (or as an Enter key).
      */
+    @SuppressLint("RestrictedApi") // overriding Activity.dispatchKeyEvent is ordinary, public Android
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (shutterKeys.handle(event)) return true
         return super.dispatchKeyEvent(event)

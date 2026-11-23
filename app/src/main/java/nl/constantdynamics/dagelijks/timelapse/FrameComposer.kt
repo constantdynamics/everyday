@@ -9,6 +9,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import androidx.core.graphics.createBitmap
 import androidx.exifinterface.media.ExifInterface
 import nl.constantdynamics.dagelijks.DagelijksApp
 import nl.constantdynamics.dagelijks.R
@@ -34,7 +35,7 @@ class FrameComposer(
     private val showDate: Boolean,
 ) {
 
-    private val frame: Bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    private val frame: Bitmap = createBitmap(width, height)
     private val canvas = Canvas(frame)
     private val photoPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.DITHER_FLAG)
     private val source = Rect()

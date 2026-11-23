@@ -1,6 +1,5 @@
 package nl.constantdynamics.dagelijks.ui.screens
 
-import android.net.Uri
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.background
@@ -26,6 +25,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.activity.compose.LocalActivity
 import nl.constantdynamics.dagelijks.storage.Project
@@ -50,7 +50,7 @@ fun PlayerScreen(
         LaunchedEffect(Unit) { onBack() }
         return
     }
-    val uri = remember(timelapse.nodeId) { Uri.parse(repository.locationOf(timelapse)) }
+    val uri = remember(timelapse.nodeId) { repository.locationOf(timelapse).toUri() }
     var failed by remember { mutableStateOf(false) }
     val view = LocalView.current
     val activity = LocalActivity.current

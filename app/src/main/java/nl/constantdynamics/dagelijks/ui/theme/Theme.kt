@@ -1,11 +1,13 @@
 package nl.constantdynamics.dagelijks.ui.theme
 
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -102,12 +104,12 @@ private val colorScheme = lightColorScheme(
 private val body = TextStyle(fontFamily = RetroFonts.Body, color = RetroColors.Navy)
 
 private val typography = Typography(
-    displayLarge = TextStyle(fontFamily = RetroFonts.Display, fontSize = 52.sp, lineHeight = 58.sp),
-    displayMedium = TextStyle(fontFamily = RetroFonts.Display, fontSize = 40.sp, lineHeight = 46.sp),
-    displaySmall = TextStyle(fontFamily = RetroFonts.Display, fontSize = 32.sp, lineHeight = 38.sp),
-    headlineLarge = TextStyle(fontFamily = RetroFonts.Display, fontSize = 28.sp, lineHeight = 34.sp),
-    headlineMedium = TextStyle(fontFamily = RetroFonts.Display, fontSize = 24.sp, lineHeight = 30.sp),
-    headlineSmall = TextStyle(fontFamily = RetroFonts.Display, fontSize = 20.sp, lineHeight = 26.sp),
+    displayLarge = TextStyle(color = RetroColors.Navy, fontFamily = RetroFonts.Display, fontSize = 52.sp, lineHeight = 58.sp),
+    displayMedium = TextStyle(color = RetroColors.Navy, fontFamily = RetroFonts.Display, fontSize = 40.sp, lineHeight = 46.sp),
+    displaySmall = TextStyle(color = RetroColors.Navy, fontFamily = RetroFonts.Display, fontSize = 32.sp, lineHeight = 38.sp),
+    headlineLarge = TextStyle(color = RetroColors.Navy, fontFamily = RetroFonts.Display, fontSize = 28.sp, lineHeight = 34.sp),
+    headlineMedium = TextStyle(color = RetroColors.Navy, fontFamily = RetroFonts.Display, fontSize = 24.sp, lineHeight = 30.sp),
+    headlineSmall = TextStyle(color = RetroColors.Navy, fontFamily = RetroFonts.Display, fontSize = 20.sp, lineHeight = 26.sp),
     titleLarge = body.copy(fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, lineHeight = 28.sp),
     titleMedium = body.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp),
     titleSmall = body.copy(fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 20.sp),
@@ -129,5 +131,7 @@ private val shapes = Shapes(
 
 @Composable
 fun DagelijksTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = colorScheme, typography = typography, shapes = shapes, content = content)
+    MaterialTheme(colorScheme = colorScheme, typography = typography, shapes = shapes) {
+        CompositionLocalProvider(LocalContentColor provides RetroColors.Navy, content = content)
+    }
 }

@@ -315,10 +315,11 @@ class BehaviourTest {
         addProject("Tuin", Lens.BACK, AspectRatio.PORTRAIT_3_4, 1, 2)
         var opened: String? = null
         var camera: String? = null
+        val projects = repository.projects.value
         show {
             HomeScreen(
                 repository = repository,
-                projects = repository.projects.value,
+                projects = projects,
                 onOpenProject = { opened = it.folderName },
                 onTakePhoto = { camera = it.folderName },
                 onNewProject = {},
@@ -328,8 +329,8 @@ class BehaviourTest {
 
         compose.onNodeWithText("Vandaag gelukt").assertIsDisplayed()
         compose.onNodeWithText("Vandaag nog niet").assertIsDisplayed()
-        compose.onNodeWithText("3 foto's", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("2 foto's", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("3 foto's").assertIsDisplayed()
+        compose.onNodeWithText("2 foto's").assertIsDisplayed()
 
         compose.onNodeWithContentDescription("Maak de foto van vandaag voor Tuin").performClick()
         assertEquals("Tuin", camera)

@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
@@ -110,16 +111,17 @@ fun RetroTitle(
         ) {
             val origin = Offset(outlinePx, outlinePx)
             val block = Stroke(width = outlinePx * 2, join = StrokeJoin.Round)
-            // The extrusion: the outlined shape repeated along the diagonal.
+            // The extrusion: the outlined shape repeated along the diagonal. Every pass names
+            // its draw style, because a stroke set earlier would otherwise stick to the paint.
             var step = depthPx
             while (step > 0f) {
                 val offset = origin + Offset(step, step)
                 drawText(layout, color = extrusion, topLeft = offset, drawStyle = block)
-                drawText(layout, color = extrusion, topLeft = offset)
+                drawText(layout, color = extrusion, topLeft = offset, drawStyle = Fill)
                 step -= 1.5f
             }
             drawText(layout, color = outline, topLeft = origin, drawStyle = block)
-            drawText(layout, color = fill, topLeft = origin)
+            drawText(layout, color = fill, topLeft = origin, drawStyle = Fill)
         }
     }
 }

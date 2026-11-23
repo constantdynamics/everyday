@@ -39,7 +39,6 @@ import nl.constantdynamics.dagelijks.core.Days
 import nl.constantdynamics.dagelijks.core.DutchText
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
-import nl.constantdynamics.dagelijks.ui.Format
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.PhotoImage
 import nl.constantdynamics.dagelijks.ui.components.Pill
@@ -170,10 +169,7 @@ private fun ProjectCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = when (val latest = project.latestPhoto) {
-                        null -> "Nog geen foto's"
-                        else -> "${DutchText.photoCount(project.photos.size)} · laatste ${Format.shortDate(latest.date)}"
-                    },
+                    text = if (project.photos.isEmpty()) "Nog geen foto's" else DutchText.photoCount(project.photos.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = RetroColors.Navy.copy(alpha = 0.85f),
                 )
