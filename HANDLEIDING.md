@@ -37,9 +37,17 @@ bouwstenen meebrengt.
 2. Klik op de groene knop **Code** en kies **Download ZIP**.
 3. Open je map **Downloads**, klik met de rechtermuisknop op het zip-bestand en kies **Alles uitpakken…**.
 4. Kies als doelmap `C:\Dagelijks` en klik op **Uitpakken**.
+5. Open `C:\Dagelijks` en ga de map in die erin staat. Daar hoort onder meer het bestand
+   **installeer-op-telefoon** te staan.
 
 Gebruik een korte map zoals `C:\Dagelijks`. Zet hem niet in OneDrive of op je bureaublad:
 daar gaat het bouwen vaak mis.
+
+> **Staat het bestand `installeer-op-telefoon` er niet?** Dan heb je de vorige versie van de
+> app gedownload. De nieuwe versie staat dan nog klaar als voorstel ("pull request") op
+> GitHub. Open op de pagina uit punt 1 het tabblad **Pull requests**, open het voorstel,
+> klik onderaan op **Ready for review** en daarna op **Merge pull request** en
+> **Confirm merge**. Download de zip daarna opnieuw.
 
 ### Stap 3. Je telefoon voorbereiden
 
@@ -55,20 +63,26 @@ Je telefoon moet toestaan dat je computer er een app op zet. Dat heet *USB-fouto
    - Heb je een Xiaomi, Redmi of Poco? Zet daar ook **Installeren via USB** aan.
 3. **Aansluiten**
    - Ontgrendel je telefoon en sluit hem met de usb-kabel aan op je computer.
-   - Op je telefoon verschijnt de vraag **USB-foutopsporing toestaan?**
-     Vink **Altijd toestaan vanaf deze computer** aan en tik op **Toestaan**.
+   - Vraagt je telefoon waarvoor je de usb-verbinding wilt gebruiken? Kies **Bestandsoverdracht**.
+   - De vraag **USB-foutopsporing toestaan?** komt pas bij stap 4, zodra je computer de
+     telefoon voor het eerst aanspreekt.
 
 ### Stap 4. De app bouwen en installeren
 
-1. Open de map `C:\Dagelijks` in de Verkenner en ga de map in die erin staat.
-2. Dubbelklik op **installeer-op-telefoon** (het volledige bestand heet `installeer-op-telefoon.bat`).
-3. Zegt Windows "Windows heeft uw pc beschermd"? Klik op **Meer informatie** en dan op **Toch uitvoeren**.
-   Windows waarschuwt bij elk programmaatje dat van internet komt.
-4. Er opent een zwart venster. Laat het open en wacht.
-   De allereerste keer duurt dit tien minuten of langer, omdat er eenmalig veel wordt gedownload.
-5. Vraagt je telefoon of de app naar Google mag worden gestuurd voor een veiligheidscontrole
+1. Zorg dat je telefoon is aangesloten en ontgrendeld.
+2. Open de map `C:\Dagelijks` in de Verkenner en ga de map in die erin staat.
+3. Dubbelklik op **installeer-op-telefoon** (het volledige bestand heet `installeer-op-telefoon.bat`).
+4. Windows waarschuwt bij elk programmaatje dat van internet komt. Zegt Windows
+   "Windows heeft uw pc beschermd"? Klik dan op **Meer informatie** en op **Toch uitvoeren**.
+   Vraagt Windows of je het bestand wilt openen? Klik dan op **Uitvoeren**.
+5. Er opent een zwart venster. De eerste keer verschijnt nu op je telefoon de vraag
+   **USB-foutopsporing toestaan?** Vink **Altijd toestaan vanaf deze computer** aan en tik op
+   **Toestaan**. Het venster wacht daarop en gaat daarna vanzelf verder.
+6. Laat het venster open en wacht. De allereerste keer duurt dit tien minuten of langer,
+   omdat er eenmalig veel wordt gedownload.
+7. Vraagt je telefoon of de app naar Google mag worden gestuurd voor een veiligheidscontrole
    (Play Protect)? Kies **Niet verzenden**. Vraagt hij of je de app toch wilt installeren? Kies **Toch installeren**.
-6. Staat er in het venster **Klaar! Dagelijks staat op je telefoon.**, dan is het gelukt.
+8. Staat er in het venster **Klaar! Dagelijks staat op je telefoon.**, dan is het gelukt.
    De app opent vanzelf op je telefoon.
 
 > **Je ondertekensleutel.** Bij de eerste keer bouwen is er een map
@@ -157,9 +171,13 @@ Installeer de app opnieuw en kies de map.
 ## Als het niet lukt
 
 **"Er is geen telefoon gevonden"**
-Controleer of de telefoon ontgrendeld is, of USB-foutopsporing aan staat (stap 3) en of je
-de vraag op je telefoon hebt beantwoord met Toestaan. Probeer een andere usb-kabel of een
-andere usb-poort. Sommige kabels kunnen alleen opladen.
+Controleer of de telefoon ontgrendeld is en of USB-foutopsporing aan staat (stap 3).
+Probeer een andere usb-kabel of een andere usb-poort. Sommige kabels kunnen alleen opladen.
+
+**De vraag "USB-foutopsporing toestaan?" verschijnt niet op mijn telefoon**
+Trek de kabel los, ontgrendel je telefoon en sluit de kabel opnieuw aan. Helpt dat niet, ga
+dan op je telefoon naar de ontwikkelaarsopties, tik op **Autorisaties USB-foutopsporing
+intrekken**, en sluit de kabel opnieuw aan.
 
 **"Android Studio is niet gevonden"**
 Android Studio staat niet op de standaardplek. Installeer het opnieuw en laat de voorgestelde

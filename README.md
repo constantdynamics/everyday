@@ -128,7 +128,7 @@ De workflow in `.github/workflows/bouw.yml` draait dit alles bij elke push.
 | Eigen navigatie in plaats van een navigatielibrary | Acht schermen; een lijstje volstaat. |
 | Altijd een eigen map `Dagelijks` | Android negeert en verwijdert `.nomedia` in standaardmappen zoals Documenten. |
 | Foto opnieuw coderen, rechtop | Zo toont elk programma hem goed, ook als het EXIF negeert, en kan er geen metadata van de camera meekomen. |
-| 16:9 fotografeer je met de telefoon op zijn kant | Zo wordt de volle breedte van de sensor gebruikt. |
+| 16:9 fotografeer je met de telefoon op zijn kant | Zo wordt de volle breedte van de sensor gebruikt. Welke kant boven ligt, maakt niet uit. |
 | Vaste sleutel voor debug én release, zelfde app-id | Elke build kan over elke andere heen. |
 
 ## Licenties

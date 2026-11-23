@@ -10,15 +10,19 @@ echo   Dagelijks op je telefoon zetten
 echo   ===============================
 echo.
 
-rem --- 1. Java: Android Studio brings its own copy -------------------------------------
-if not defined JAVA_HOME goto zoek_java
-if exist "%JAVA_HOME%\bin\java.exe" goto java_gevonden
-
-:zoek_java
+rem --- 1. Java: Android Studio brings its own copy, and that is the one that fits ------
+rem A Java that happens to be installed for something else may be too old, so it is
+rem only used when Android Studio is not in one of its usual places.
+set "EIGEN_JAVA=%JAVA_HOME%"
 set "JAVA_HOME=%ProgramFiles%\Android\Android Studio\jbr"
 if exist "%JAVA_HOME%\bin\java.exe" goto java_gevonden
 set "JAVA_HOME=%LOCALAPPDATA%\Programs\Android Studio\jbr"
 if exist "%JAVA_HOME%\bin\java.exe" goto java_gevonden
+set "JAVA_HOME=%EIGEN_JAVA%"
+if not defined JAVA_HOME goto geen_java
+if exist "%JAVA_HOME%\bin\java.exe" goto java_gevonden
+
+:geen_java
 echo   Android Studio is niet gevonden op deze computer.
 echo   Installeer eerst Android Studio (HANDLEIDING.md, stap 1) en probeer het daarna opnieuw.
 goto mislukt
@@ -40,19 +44,41 @@ set "ADB=%SDK%\platform-tools\adb.exe"
 
 rem --- 3. Is a phone connected, and has it accepted this computer? -------------------
 rem "adb get-state" succeeds only when exactly one phone is connected and trusted.
+rem A phone that was plugged in a moment ago needs a few seconds to show up.
+echo   Ik zoek je telefoon...
 "%ADB%" start-server >nul 2>nul
+set /a POGING=0
+
+:zoek_telefoon
 "%ADB%" get-state >nul 2>nul
 if not errorlevel 1 goto bouwen
-
 "%ADB%" devices | findstr /C:"unauthorized" >nul
-if errorlevel 1 goto geen_telefoon
-echo   Je telefoon is gevonden, maar heeft deze computer nog niet toegelaten.
-echo   Kijk op het scherm van je telefoon: daar staat de vraag
-echo   "USB-foutopsporing toestaan?". Vink "Altijd toestaan" aan en tik op Toestaan.
-echo   Start dit bestand daarna opnieuw.
+if not errorlevel 1 goto vraag_toestemming
+set /a POGING+=1
+if %POGING% geq 6 goto geen_telefoon
+ping -n 3 127.0.0.1 >nul
+goto zoek_telefoon
+
+:vraag_toestemming
+echo.
+echo   Je telefoon is gevonden. Kijk nu op het scherm van je telefoon. Daar staat de vraag
+echo   "USB-foutopsporing toestaan?". Vink "Altijd toestaan vanaf deze computer" aan
+echo   en tik op Toestaan. Dit venster wacht tot je dat hebt gedaan.
+set /a POGING=0
+
+:wacht_op_toestemming
+ping -n 3 127.0.0.1 >nul
+"%ADB%" get-state >nul 2>nul
+if not errorlevel 1 goto bouwen
+set /a POGING+=1
+if %POGING% lss 60 goto wacht_op_toestemming
+echo.
+echo   Er is geen toestemming gegeven. Zie je de vraag niet op je telefoon? Trek de kabel
+echo   los, ontgrendel je telefoon, sluit de kabel opnieuw aan en start dit bestand opnieuw.
 goto mislukt
 
 :geen_telefoon
+echo.
 echo   Er is geen telefoon gevonden (of er zijn er meerdere aangesloten).
 echo.
 echo   Controleer dit:
@@ -63,11 +89,13 @@ echo   Start dit bestand daarna opnieuw.
 goto mislukt
 
 :bouwen
+echo.
 echo   De app wordt gebouwd en op je telefoon gezet.
 echo   De allereerste keer duurt dat lang (tien minuten of meer), daarna veel korter.
-echo   Laat dit venster open en je telefoon aangesloten.
+echo   Laat dit venster open en je telefoon aangesloten. Kijk af en toe op je telefoon:
+echo   vraagt die iets over installeren, kies dan Installeren of Toch installeren.
 echo.
-call gradlew.bat installRelease
+call gradlew.bat --no-daemon installRelease
 if errorlevel 1 goto bouwen_mislukt
 
 if defined ADB "%ADB%" shell am start -n nl.constantdynamics.dagelijks/.MainActivity >nul 2>nul

@@ -27,7 +27,8 @@ Lukt iets niet? Schrijf op bij welk punt het misging en wat je zag.
 - [ ] Tik op **Opnieuw** en druk op **volume omhoog**. De app vraagt of de foto van vandaag vervangen mag worden. Kies **Nee**.
 - [ ] Druk op **volume omlaag**. Weer dezelfde vraag. Kies nu **Ja, vervang**.
 - [ ] De flitserknop staat uit. Zet hem aan, sluit de camera en open hem opnieuw: hij staat weer uit.
-- [ ] Open het project **De boom in de tuin**: het scherm draait naar liggend. Maak een foto.
+- [ ] Open de camera van **De boom in de tuin**: het scherm draait naar liggend. Houd je telefoon op zijn kant (welke kant maakt niet uit) en maak een foto.
+- [ ] Bekijk die foto in de galerij: hij is breder dan hoog en staat rechtop.
 - [ ] Bekijk een selfie in de galerij. Tekst op je kleding is gewoon leesbaar, dus niet in spiegelbeeld.
 
 ## Stap 4 – Overlay
