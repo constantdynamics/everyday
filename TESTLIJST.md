@@ -5,11 +5,11 @@ Lukt iets niet? Schrijf op bij welk punt het misging en wat je zag.
 
 ## Stap 1 – Installeren
 
-- [ ] De app staat op je telefoon met de naam **Everyday** en een mintgroen icoon met een stapel foto's.
+- [ ] De app staat op je telefoon met de naam **Everyday** en een donker icoon met een koraalrode stip en een amberkleurige ring.
 - [ ] De app start zonder om toestemmingen te vragen.
 - [ ] In **Instellingen → Apps → Everyday → Rechten** staat alleen **Camera** (en die staat nog op "niet toegestaan").
 - [ ] Dubbelklik nog een keer op `installeer-op-telefoon`. De app wordt bijgewerkt zonder dat je hem eerst hoeft te verwijderen.
-- [ ] Op je computer bestaat de map `C:\Users\<jouw naam>\Dagelijks-sleutel` met twee bestanden.
+- [ ] Op je computer bestaat de map `C:\Users\<jouw naam>\Everyday-sleutel` met twee bestanden.
 
 ## Stap 2 – Map kiezen en projecten
 
@@ -17,13 +17,13 @@ Lukt iets niet? Schrijf op bij welk punt het misging en wat je zag.
 - [ ] Maak het project **Mijn gezicht**: voorkant, 3:4.
 - [ ] Maak het project **De boom in de tuin**: achterkant, 16:9.
 - [ ] Beide projecten staan op het startscherm met "Nog geen foto's" en "Vandaag nog niet".
-- [ ] Open op je telefoon de app **Bestanden** en ga naar **Documenten → Dagelijks**. Er staan twee mappen, elk met een `project.json`.
+- [ ] Open op je telefoon de app **Bestanden** en ga naar **Documenten → Everyday**. Er staan twee mappen, elk met een `project.json`.
 
 ## Stap 3 – Camera en opslaan
 
 - [ ] Tik bij **Mijn gezicht** op de ronde cameraknop. Android vraagt om de camera; kies **Tijdens gebruik van de app**.
 - [ ] Je ziet jezelf gespiegeld, zoals in een spiegel. De uitleg "Je eerste foto!" staat eronder.
-- [ ] Maak een foto met de grote ronde knop. Er verschijnt **opgeslagen!**
+- [ ] Maak een foto met de grote ronde knop. Er verschijnt **Opgeslagen**.
 - [ ] Tik op **Opnieuw** en druk op **volume omhoog**. De app vraagt of de foto van vandaag vervangen mag worden. Kies **Nee**.
 - [ ] Druk op **volume omlaag**. Weer dezelfde vraag. Kies nu **Ja, vervang**.
 - [ ] De flitserknop staat uit. Zet hem aan, sluit de camera en open hem opnieuw: hij staat weer uit.
@@ -34,7 +34,7 @@ Lukt iets niet? Schrijf op bij welk punt het misging en wat je zag.
 ## Stap 4 – Overlay
 
 De overlay zie je pas vanaf de tweede dag. Om het vandaag al te testen: sluit je telefoon
-aan op je computer en hernoem in `Documents\Dagelijks\Mijn gezicht` de foto van vandaag
+aan op je computer en hernoem in `Documents\Everyday\Mijn gezicht` de foto van vandaag
 naar de datum van gisteren (bijvoorbeeld `2026-11-22.jpg`). Open de app daarna opnieuw.
 
 - [ ] In de camera ligt de vorige foto half doorzichtig over het beeld.
@@ -60,20 +60,21 @@ Met twee of drie foto's is de video kort, maar het werkt hetzelfde.
 - [ ] Verschuif de snelheid. De regel "… foto's ≈ … seconden" verandert mee.
 - [ ] Tik op **Maak timelapse**. Er loopt een voortgangsbalk en de app blijft reageren.
 - [ ] Na afloop kun je de video **bekijken** in de app.
-- [ ] Het bestand staat in `Documents\Dagelijks\<project>\timelapses\` en speelt af op je computer.
+- [ ] Het bestand staat in `Documents\Everyday\<project>\timelapses\` en speelt af op je computer.
 - [ ] Er is nergens een knop om te delen.
 
 ## Stap 7 – Vormgeving
 
-- [ ] Mintgroene achtergrond, koraalrode en mosterdgele knoppen, marineblauwe randen, crème kaarten.
-- [ ] De titel **Everyday** heeft dikke letters met een schaduw eronder en een dunne lichte rand.
-- [ ] Boven de titel hangt een lint met "elke dag een foto".
-- [ ] Het camerascherm is rustig en donker; alleen de knoppen en de regelaar zijn in stijl.
+- [ ] Alle schermen zijn donker inktblauw met warm witte tekst; kaarten zijn net iets lichter en hebben een dunne rand.
+- [ ] De titel **Everyday** staat in brede, dunne, amberkleurige letters, met "ELKE DAG EEN FOTO" erboven.
+- [ ] Koraalrood zie je alleen op de sluiterknop en op de ene knop die op dat moment telt: de cameraknop zolang de foto van vandaag er nog niet is, en "Maak timelapse" daarna.
+- [ ] Nergens dikke randen, harde schaduwen, korrel of stralen.
+- [ ] Het camerascherm is rustig; de vorige foto en het live beeld staan centraal.
 - [ ] Alle tekst is Nederlands.
 
 ## Privacy en opslag
 
 - [ ] Zet je telefoon in de vliegtuigmodus. Alles in de app werkt gewoon door.
 - [ ] Open je galerij en Google Foto's. De foto's uit Everyday staan er niet in.
-- [ ] Sluit je telefoon aan op je computer. In `Documents\Dagelijks` staan je foto's als `JJJJ-MM-DD.jpg`.
+- [ ] Sluit je telefoon aan op je computer. In `Documents\Everyday` staan je foto's als `JJJJ-MM-DD.jpg`.
 - [ ] Verwijder de app van je telefoon en installeer hem opnieuw. Kies dezelfde map. Alle projecten, foto's en de stand van de regelaar zijn terug.

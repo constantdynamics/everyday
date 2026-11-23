@@ -32,7 +32,7 @@ import nl.constantdynamics.dagelijks.storage.StorageAccess
 import nl.constantdynamics.dagelijks.timelapse.TimelapseRenderer
 import nl.constantdynamics.dagelijks.ui.AppServices
 import nl.constantdynamics.dagelijks.ui.LocalServices
-import nl.constantdynamics.dagelijks.ui.components.RetroDialog
+import nl.constantdynamics.dagelijks.ui.components.AppDialog
 import nl.constantdynamics.dagelijks.ui.screens.AboutScreen
 import nl.constantdynamics.dagelijks.ui.screens.CameraLayout
 import nl.constantdynamics.dagelijks.ui.screens.GalleryScreen
@@ -78,7 +78,7 @@ class ScreensTest {
 
     @Before
     fun setUp() {
-        val tree = LocalFileTree(temporary.newFolder("Dagelijks"))
+        val tree = LocalFileTree(temporary.newFolder("Everyday"))
         repository = ProjectRepository(tree, tree.pickedFolderId, Dispatchers.Unconfined, photoSize = ImageLoader::readSize)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         services = AppServices(
@@ -175,7 +175,7 @@ class ScreensTest {
 
     @Test
     fun about() {
-        show("10-over") { AboutScreen("Documents/Dagelijks", {}) }
+        show("10-over") { AboutScreen("Documents/Everyday", {}) }
     }
 
     @Test
@@ -216,7 +216,7 @@ class ScreensTest {
     fun replaceQuestion() {
         compose.setContent {
             DagelijksTheme {
-                RetroDialog(
+                AppDialog(
                     title = "Foto vervangen?",
                     onDismiss = {},
                     confirmText = "Ja, vervang",

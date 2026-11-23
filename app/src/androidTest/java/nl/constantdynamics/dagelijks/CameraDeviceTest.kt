@@ -57,7 +57,7 @@ class CameraDeviceTest {
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val app = instrumentation.targetContext.applicationContext as DagelijksApp
-    private val folder = File(app.getExternalFilesDir(null), "cameratest/Dagelijks")
+    private val folder = File(app.getExternalFilesDir(null), "cameratest/Everyday")
     private val today: LocalDate = LocalDate.now()
 
     @get:Rule(order = 0)

@@ -35,27 +35,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.storage.Photo
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.Format
+import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.AppButton
+import nl.constantdynamics.dagelijks.ui.components.AppDialog
+import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
+import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.PhotoImage
-import nl.constantdynamics.dagelijks.ui.components.RetroBackground
-import nl.constantdynamics.dagelijks.ui.components.RetroButton
-import nl.constantdynamics.dagelijks.ui.components.RetroDialog
-import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
-import nl.constantdynamics.dagelijks.ui.components.retroBox
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 import java.time.LocalDate
 
 /**
@@ -86,21 +85,22 @@ fun ViewerScreen(
     var askReplace by rememberSaveable { mutableStateOf(false) }
     var failed by rememberSaveable { mutableStateOf(false) }
 
-    RetroBackground(Modifier.fillMaxSize(), sunburst = false) {
+    AppBackground(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                RetroIconButton(AppIcons.Back, "Terug", onClick = onBack)
+                AppIconButton(AppIcons.Back, "Terug", onClick = onBack)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(Format.dateWithWeekday(current.date), style = MaterialTheme.typography.titleLarge)
+                    Text(Format.dateWithWeekday(current.date), style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Foto ${pager.currentPage + 1} van ${photos.size} · ${project.settings.name}",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextMuted,
                         maxLines = 1,
                     )
                 }
@@ -118,18 +118,18 @@ fun ViewerScreen(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                RetroButton(
+                AppButton(
                     text = "Verwijder",
                     onClick = { askDelete = true },
                     icon = AppIcons.Delete,
-                    color = RetroColors.Cream,
-                    contentColor = RetroColors.Navy,
+                    kind = ButtonKind.Secondary,
                     modifier = Modifier.weight(1f),
                 )
-                RetroButton(
+                AppButton(
                     text = "Vervang",
                     onClick = { askReplace = true },
                     icon = AppIcons.Retake,
+                    kind = ButtonKind.Secondary,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -137,7 +137,7 @@ fun ViewerScreen(
     }
 
     if (askDelete) {
-        RetroDialog(
+        AppDialog(
             title = "Foto verwijderen?",
             onDismiss = { askDelete = false },
             confirmText = "Ja, verwijder",
@@ -157,7 +157,7 @@ fun ViewerScreen(
     }
 
     if (askReplace) {
-        RetroDialog(
+        AppDialog(
             title = "Foto vervangen?",
             onDismiss = { askReplace = false },
             confirmText = "Maak een nieuwe foto",
@@ -175,13 +175,13 @@ fun ViewerScreen(
     }
 
     if (failed) {
-        RetroDialog(
+        AppDialog(
             title = "Dat ging niet goed",
             onDismiss = { failed = false },
             confirmText = "Oké",
             onConfirm = { failed = false },
             dismissText = null,
-            confirmColor = RetroColors.Mustard,
+            confirmKind = ButtonKind.Secondary,
         ) {
             Text("De foto kon niet worden verwijderd.", style = MaterialTheme.typography.bodyLarge)
         }
@@ -189,7 +189,7 @@ fun ViewerScreen(
 }
 
 /**
- * A photo in a white print frame. Pinch to zoom in, drag to look around, double tap
+ * A photo with softly rounded corners. Pinch to zoom in, drag to look around, double tap
  * to zoom in or back out. While it is not zoomed, a sideways swipe is left alone so
  * it turns the page to the next day.
  */
@@ -198,15 +198,12 @@ private fun ZoomablePhoto(repository: ProjectRepository, photo: Photo, ratio: Fl
     var scale by remember(photo.date) { mutableFloatStateOf(1f) }
     var offset by remember(photo.date) { mutableStateOf(Offset.Zero) }
 
-    Box(
-        modifier = Modifier
-            .retroBox(fill = Color.White, corner = 8.dp, shadow = DpOffset(5.dp, 6.dp))
-            .padding(8.dp),
-    ) {
+    val shape = RoundedCornerShape(12.dp)
+    Box(modifier = Modifier.border(1.dp, AppColors.Hairline, shape)) {
         Box(
             modifier = Modifier
                 .aspectRatio(ratio)
-                .clip(RectangleShape)
+                .clip(shape)
                 .pointerInput(photo.date) {
                     detectTapGestures(
                         onDoubleTap = {
@@ -243,7 +240,7 @@ private fun ZoomablePhoto(repository: ProjectRepository, photo: Photo, ratio: Fl
                 maxSide = 2048,
                 contentScale = ContentScale.Crop,
                 contentDescription = "Foto van ${Format.date(photo.date)}",
-                placeholder = RetroColors.CreamDark,
+                placeholder = AppColors.Surface,
                 modifier = Modifier.fillMaxSize().graphicsLayer {
                     scaleX = scale
                     scaleY = scale

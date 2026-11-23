@@ -73,7 +73,7 @@ class VideoEncoderDeviceTest {
 
     @Test
     fun aWholeProjectIsRenderedIntoItsTimelapsesFolder() = runBlocking {
-        val root = File(context.cacheDir, "timelapse-test/Dagelijks").apply {
+        val root = File(context.cacheDir, "timelapse-test/Everyday").apply {
             deleteRecursively()
             mkdirs()
         }

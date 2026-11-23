@@ -5,7 +5,6 @@ import kotlinx.coroutines.runBlocking
 import nl.constantdynamics.dagelijks.core.AspectRatio
 import nl.constantdynamics.dagelijks.core.Lens
 import nl.constantdynamics.dagelijks.core.PixelSize
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -34,7 +33,7 @@ class ProjectRepositoryTest {
 
     @Before
     fun setUp() {
-        root = temporary.newFolder("Dagelijks")
+        root = temporary.newFolder("Everyday")
         tree = LocalFileTree(root)
     }
 

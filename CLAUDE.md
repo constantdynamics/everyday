@@ -11,9 +11,13 @@ niet: leg in gewone taal uit wat hij zelf moet doen, en doe de rest zelf.
   naar de cloud, alleen de runtime-permissie `CAMERA`. De build controleert dit zelf
   (`controleerPrivacy…` en `scripts/controleer-privacy.sh`); zie het hoofdstuk Privacy in
   `README.md`.
-- **Namen.** De app heet Everyday. De map met foto's op de telefoon heet `Dagelijks` en de map
-  met de ondertekensleutel op de computer heet `Dagelijks-sleutel`. Het app-id blijft
-  `nl.constantdynamics.dagelijks`.
+- **Namen.** De app heet Everyday. De map met foto's op de telefoon heet ook `Everyday` en de
+  map met de ondertekensleutel op de computer heet `Everyday-sleutel`. Het app-id en de
+  pakketnaam blijven `nl.constantdynamics.dagelijks`.
+- **Vormgeving.** De eigenaar koos het ontwerp "Nachtfilm": donker inktblauw, warm wit, amber,
+  en koraalrood alleen voor de sluiter en de ene actie die telt. Kleuren en letters staan in
+  `ui/theme/Theme.kt`. De eigenaar vond dikke letters, dikke randen, harde schaduwen, drukke
+  achtergronden en een kinderlijke uitstraling lelijk; houd het rustig.
 - **Taal.** Alles wat de gebruiker ziet is Nederlands; code en commentaar zijn Engels.
 - **Testen.** `./gradlew testDebugUnitTest lintDebug` voor de unittests en lint; de tests op
   een emulator draaien in de workflow (`.github/workflows/bouw.yml`).

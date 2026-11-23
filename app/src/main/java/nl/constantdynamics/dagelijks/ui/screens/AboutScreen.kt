@@ -28,12 +28,14 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.storage.StorageAccess
 import nl.constantdynamics.dagelijks.ui.LocalServices
+import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.AppButton
+import nl.constantdynamics.dagelijks.ui.components.AppCard
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
-import nl.constantdynamics.dagelijks.ui.components.RetroBackground
-import nl.constantdynamics.dagelijks.ui.components.RetroButton
-import nl.constantdynamics.dagelijks.ui.components.RetroCard
+import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.components.SectionLabel
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 
 /** Where the photos are, how to back them up, what the app can and cannot do, and the licences. */
 @Composable
@@ -58,30 +60,29 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
     }
 
-    RetroBackground(Modifier.fillMaxSize(), sunburst = false) {
+    AppBackground(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ScreenHeader(title = "Over de app", onBack = onBack)
+            ScreenHeader(title = "Over de app", onBack = onBack, modifier = Modifier.padding(bottom = 6.dp))
 
             Section("Waar staan je foto's?") {
                 Paragraph("In de map “$location” op je telefoon. Elk project heeft daar een eigen map, met één foto per dag: 2026-11-23.jpg, 2026-11-24.jpg, enzovoort.")
                 Paragraph("In de map staat een bestandje “.nomedia”. Daardoor slaan je galerij en Google Foto's de map over, en wordt er niets gesynchroniseerd.")
-                problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = RetroColors.CoralDark) }
-                RetroButton(
+                problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = AppColors.Coral) }
+                AppButton(
                     "Andere map kiezen",
                     onClick = {
                         runCatching { picker.launch(StorageAccess.suggestedStartFolder) }
                             .onFailure { problem = "De mappenkiezer van je telefoon kon niet worden geopend." }
                     },
                     icon = AppIcons.Folder,
-                    color = RetroColors.Cream,
-                    contentColor = RetroColors.Navy,
+                    kind = ButtonKind.Secondary,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -97,8 +98,8 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
             }
 
             Section("Licenties") {
-                Paragraph("Lettertypen: Shrikhand (Jonny Pinhorn), Pacifico (The Pacifico Project Authors) en Work Sans (The Work Sans Project Authors), alle drie onder de SIL Open Font License 1.1.")
-                Paragraph("Pictogrammen: Material Design icons van Google, Apache-licentie 2.0. Bouwstenen: AndroidX, Jetpack Compose en CameraX van Google en Kotlin van JetBrains, Apache-licentie 2.0.")
+                Paragraph("Lettertypen: Unbounded (The Unbounded Project Authors) en Outfit (The Outfit Project Authors), allebei onder de SIL Open Font License 1.1.")
+                Paragraph("Bouwstenen: AndroidX, Jetpack Compose en CameraX van Google en Kotlin van JetBrains, Apache-licentie 2.0.")
                 Paragraph("Versie $version")
             }
             Spacer(Modifier.height(12.dp))
@@ -108,9 +109,9 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
 
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
-    RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+    AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(title, style = MaterialTheme.typography.headlineMedium)
+            SectionLabel(title)
             content()
         }
     }

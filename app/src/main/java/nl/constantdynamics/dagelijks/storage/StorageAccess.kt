@@ -67,7 +67,7 @@ class StorageAccess(private val context: Context) {
         }
     }
 
-    /** A readable description of where the photos are, for example "Documents/Dagelijks". */
+    /** A readable description of where the photos are, for example "Documents/Everyday". */
     fun describeLocation(opened: Opened): String {
         val path = opened.rootId.substringAfter(':', opened.rootId)
         val volume = opened.rootId.substringBefore(':', "")

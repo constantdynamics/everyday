@@ -47,8 +47,8 @@ class FrameComposer(
         textSize = this@FrameComposer.textSize
         // The bundled body font is a variable font; ask for its bold weight.
         runCatching {
-            typeface = context.resources.getFont(R.font.work_sans)
-            fontVariationSettings = "'wght' 700"
+            typeface = context.resources.getFont(R.font.outfit)
+            fontVariationSettings = "'wght' 600"
         }.onFailure { typeface = Typeface.DEFAULT_BOLD }
         // White with a soft dark edge stays readable on any photo.
         setShadowLayer(this@FrameComposer.textSize * 0.16f, 0f, this@FrameComposer.textSize * 0.05f, Color.argb(200, 0, 0, 0))

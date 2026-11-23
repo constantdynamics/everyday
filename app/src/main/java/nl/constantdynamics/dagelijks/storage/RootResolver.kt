@@ -9,16 +9,16 @@ import nl.constantdynamics.dagelijks.core.ProjectSettingsJson
  * The main folder must be a dedicated folder. Android silently removes a .nomedia
  * file from the standard top-level folders (Documents, Pictures, ...), which would
  * make every photo show up in the gallery and in Google Photos after all. So unless
- * the picked folder is clearly ours already, a folder named "Dagelijks" inside it is
+ * the picked folder is clearly ours already, a folder named "Everyday" inside it is
  * used, and created when needed.
  *
  * That also makes the first start forgiving: picking "Documents", picking a freshly
- * made "Dagelijks" folder, or picking either of them again after a reinstall all end
+ * made "Everyday" folder, or picking either of them again after a reinstall all end
  * up at the same place.
  */
 object RootResolver {
 
-    const val MAIN_FOLDER_NAME = "Dagelijks"
+    const val MAIN_FOLDER_NAME = "Everyday"
 
     fun resolve(tree: FileTree): String {
         val picked = tree.pickedFolderId

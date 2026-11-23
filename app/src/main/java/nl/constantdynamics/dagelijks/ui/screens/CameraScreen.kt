@@ -56,7 +56,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +66,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
@@ -90,7 +90,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -110,14 +109,17 @@ import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.Format
 import nl.constantdynamics.dagelijks.ui.LocalServices
 import nl.constantdynamics.dagelijks.ui.ShutterKeyHandler
+import nl.constantdynamics.dagelijks.ui.components.AppButton
+import nl.constantdynamics.dagelijks.ui.components.AppDialog
+import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
-import nl.constantdynamics.dagelijks.ui.components.RetroButton
-import nl.constantdynamics.dagelijks.ui.components.RetroDialog
-import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
-import nl.constantdynamics.dagelijks.ui.components.RetroSlider
-import nl.constantdynamics.dagelijks.ui.components.Ribbon
+import nl.constantdynamics.dagelijks.ui.components.AppSlider
+import nl.constantdynamics.dagelijks.ui.components.ButtonKind
+import nl.constantdynamics.dagelijks.ui.components.IconButtonKind
+import nl.constantdynamics.dagelijks.ui.components.Pill
+import nl.constantdynamics.dagelijks.ui.components.PillTone
 import nl.constantdynamics.dagelijks.ui.components.rememberPhotoBitmap
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -152,7 +154,7 @@ private sealed interface Phase {
  * The heart of the app: the live camera image with the previous photo of the project
  * lying over it, half transparent, so today's photo can be lined up exactly.
  *
- * The screen itself stays quiet and dark. The viewfinder has precisely the project's
+ * The screen itself stays quiet. The viewfinder has precisely the project's
  * aspect ratio and shows precisely what will be saved; the overlay fills that same
  * rectangle, so the two coincide. For the front camera the overlay is mirrored,
  * because the live image is mirrored there and the stored photo is not.
@@ -214,17 +216,9 @@ fun CameraScreen(
         }
         onDispose { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
     }
-    DisposableEffect(view, activity) {
+    DisposableEffect(view) {
         view.keepScreenOn = true
-        val window = activity?.window
-        val bars = window?.let { WindowCompat.getInsetsController(it, view) }
-        bars?.isAppearanceLightStatusBars = false
-        bars?.isAppearanceLightNavigationBars = false
-        onDispose {
-            view.keepScreenOn = false
-            bars?.isAppearanceLightStatusBars = true
-            bars?.isAppearanceLightNavigationBars = true
-        }
+        onDispose { view.keepScreenOn = false }
     }
 
     fun close() {
@@ -389,7 +383,7 @@ fun CameraScreen(
     when (val current = phase) {
         is Phase.ConfirmReplace -> {
             val day = if (current.photo.date == today) "vandaag" else Format.date(current.photo.date)
-            RetroDialog(
+            AppDialog(
                 title = "Foto vervangen?",
                 onDismiss = {
                     current.photo.file.delete()
@@ -406,17 +400,17 @@ fun CameraScreen(
             }
         }
 
-        is Phase.Failed -> RetroDialog(
+        is Phase.Failed -> AppDialog(
             title = "Dat ging niet goed",
             onDismiss = { phase = Phase.Aiming },
             confirmText = "Oké",
             onConfirm = { phase = Phase.Aiming },
             dismissText = null,
-            confirmColor = RetroColors.Mustard,
+            confirmKind = ButtonKind.Secondary,
         ) {
             Text(
                 text = if (current.whileSaving) {
-                    "De foto kon niet worden opgeslagen. Controleer of er nog ruimte vrij is op je telefoon en of de map Dagelijks nog bestaat."
+                    "De foto kon niet worden opgeslagen. Controleer of er nog ruimte vrij is op je telefoon en of de map Everyday nog bestaat."
                 } else {
                     "De foto kon niet worden gemaakt. Probeer het nog een keer."
                 },
@@ -465,7 +459,7 @@ fun CameraLayout(
     val overlayAlpha = if (overlayHidden || picture != null) 0f else overlayPercent / 100f
     val showOverlayControls = overlay != null && !saved
 
-    Box(Modifier.fillMaxSize().background(RetroColors.CameraBackground)) {
+    Box(Modifier.fillMaxSize().background(AppColors.Ground)) {
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val landscape = maxWidth > maxHeight
             val sidePanel = 76.dp
@@ -488,11 +482,11 @@ fun CameraLayout(
                 onHold = onHoldOverlayAway,
             ) {
                 when {
-                    saved -> Ribbon(
-                        "opgeslagen!",
-                        Modifier.align(Alignment.TopCenter).padding(top = 18.dp),
-                        color = RetroColors.Mustard,
-                        textColor = RetroColors.Navy,
+                    saved -> Pill(
+                        "Opgeslagen",
+                        Modifier.align(Alignment.TopCenter).padding(top = 16.dp),
+                        tone = PillTone.Done,
+                        icon = AppIcons.Check,
                     )
                     note != null -> FinderNote(note)
                 }
@@ -516,19 +510,18 @@ fun CameraLayout(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     if (showOverlayControls) {
-                        Text("$overlayPercent%", style = MaterialTheme.typography.labelLarge, color = RetroColors.Cream)
+                        Text("$overlayPercent%", style = MaterialTheme.typography.labelLarge, color = AppColors.Text)
                         Spacer(Modifier.height(6.dp))
-                        RetroSlider(
+                        AppSlider(
                             value = overlayPercent.toFloat(),
                             onValueChange = { onOverlayPercentChange(it.roundToInt()) },
                             valueRange = 0f..100f,
                             onValueChangeFinished = onOverlayPercentChangeFinished,
-                            onDark = true,
                             description = OVERLAY_SLIDER_DESCRIPTION,
                             modifier = Modifier.weight(1f).vertical(),
                         )
                         Spacer(Modifier.height(6.dp))
-                        Icon(AppIcons.Layers, contentDescription = null, tint = RetroColors.Cream, modifier = Modifier.size(22.dp))
+                        Icon(AppIcons.Layers, contentDescription = null, tint = AppColors.Amber, modifier = Modifier.size(22.dp))
                     }
                 }
                 Column(
@@ -536,25 +529,24 @@ fun CameraLayout(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    RetroIconButton(AppIcons.Close, "Sluiten", onClick = onClose)
+                    AppIconButton(AppIcons.Close, "Sluiten", onClick = onClose, size = 56.dp)
                     ShutterButton(enabled = shutterEnabled, busy = busy, onClick = onShutter)
                     FlashButton(flashKind, flashOn, onToggle = onToggleFlash)
                 }
             } else {
                 Column(
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(bottomPanel).padding(horizontal = 20.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(bottomPanel).padding(horizontal = 28.dp),
                     verticalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     if (showOverlayControls) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(AppIcons.Layers, contentDescription = null, tint = RetroColors.Cream, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(10.dp))
-                            RetroSlider(
+                            Icon(AppIcons.Layers, contentDescription = null, tint = AppColors.Amber, modifier = Modifier.size(22.dp))
+                            Spacer(Modifier.width(14.dp))
+                            AppSlider(
                                 value = overlayPercent.toFloat(),
                                 onValueChange = { onOverlayPercentChange(it.roundToInt()) },
                                 valueRange = 0f..100f,
                                 onValueChangeFinished = onOverlayPercentChangeFinished,
-                                onDark = true,
                                 description = OVERLAY_SLIDER_DESCRIPTION,
                                 modifier = Modifier.weight(1f),
                             )
@@ -562,7 +554,7 @@ fun CameraLayout(
                             Text(
                                 "$overlayPercent%",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = RetroColors.Cream,
+                                color = AppColors.Text,
                                 textAlign = TextAlign.End,
                                 modifier = Modifier.width(46.dp),
                             )
@@ -571,7 +563,7 @@ fun CameraLayout(
                         Text(
                             "Je eerste foto! Vanaf de volgende keer schijnt deze hier doorheen, zodat je precies hetzelfde kunt gaan staan.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = RetroColors.Cream,
+                            color = AppColors.TextMuted,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -583,7 +575,7 @@ fun CameraLayout(
                     ) {
                         FlashButton(flashKind, flashOn, onToggle = onToggleFlash)
                         ShutterButton(enabled = shutterEnabled, busy = busy, onClick = onShutter)
-                        RetroIconButton(AppIcons.Close, "Sluiten", onClick = onClose)
+                        AppIconButton(AppIcons.Close, "Sluiten", onClick = onClose, size = 56.dp)
                     }
                 }
             }
@@ -647,7 +639,7 @@ private fun Viewfinder(
             )
         }
         if (blink > 0f) Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = blink)))
-        Box(Modifier.fillMaxSize().border(1.5.dp, RetroColors.Cream.copy(alpha = 0.55f)))
+        Box(Modifier.fillMaxSize().border(1.dp, AppColors.Hairline))
         content()
     }
 }
@@ -677,13 +669,13 @@ private fun BoxScope.FinderNote(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
-        color = RetroColors.Cream,
+        color = AppColors.Text,
         textAlign = TextAlign.Center,
         modifier = Modifier
             .align(Alignment.TopCenter)
             .padding(12.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(RetroColors.NavyDeep.copy(alpha = 0.78f))
+            .background(AppColors.Ground.copy(alpha = 0.82f))
             .padding(horizontal = 14.dp, vertical = 8.dp),
     )
 }
@@ -693,7 +685,7 @@ private fun BoxScope.FinderMessage(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
-        color = RetroColors.Cream,
+        color = AppColors.Text,
         textAlign = TextAlign.Center,
         modifier = Modifier.align(Alignment.Center).padding(24.dp),
     )
@@ -713,48 +705,55 @@ private fun BoxScope.PermissionExplanation(
         Text(
             "Everyday heeft de camera nodig om foto's te maken. Dat is de enige toestemming die de app vraagt.",
             style = MaterialTheme.typography.bodyLarge,
-            color = RetroColors.Cream,
+            color = AppColors.Text,
             textAlign = TextAlign.Center,
         )
-        RetroButton("Geef toegang tot de camera", onClick = onAsk, icon = AppIcons.Camera)
+        AppButton("Geef toegang tot de camera", onClick = onAsk, icon = AppIcons.Camera)
         if (asked) {
             Text(
                 "Gebeurt er niets? Zet de camera dan aan bij de instellingen van de app.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = RetroColors.Cream,
+                color = AppColors.TextMuted,
                 textAlign = TextAlign.Center,
             )
-            RetroButton("Open instellingen", onClick = onOpenSettings, color = RetroColors.Cream, contentColor = RetroColors.Navy)
+            AppButton("Open instellingen", onClick = onOpenSettings, kind = ButtonKind.Secondary)
         }
     }
 }
 
-/** The big round shutter button. */
+/** The big round shutter button: a warm-white ring around the one hot colour of the app. */
 @Composable
 private fun ShutterButton(enabled: Boolean, busy: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Box(
         modifier = Modifier
-            .size(92.dp)
+            .size(88.dp)
             .testTag(CameraTags.SHUTTER)
             .semantics { contentDescription = "Maak foto" }
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .drawBehind {
                 val radius = size.minDimension / 2
-                val ring = 5.dp.toPx()
-                drawCircle(RetroColors.Cream, radius - ring / 2, style = Stroke(ring))
-                val face = (radius - ring - 5.dp.toPx()) * (if (pressed) 0.9f else 1f)
-                drawCircle(if (enabled || busy) RetroColors.Coral else RetroColors.Coral.copy(alpha = 0.4f), face)
-                drawCircle(RetroColors.NavyDeep, face, style = Stroke(2.5.dp.toPx()))
+                val ring = 3.dp.toPx()
+                val face = (radius - ring - 5.dp.toPx()) * (if (pressed) 0.92f else 1f)
+                if (enabled) {
+                    // A soft glow, as if the button were lit from within.
+                    val glow = radius * 1.3f
+                    drawCircle(
+                        brush = Brush.radialGradient(listOf(AppColors.Coral.copy(alpha = 0.5f), Color.Transparent), radius = glow),
+                        radius = glow,
+                    )
+                }
+                drawCircle(AppColors.Text, radius - ring / 2, style = Stroke(ring))
+                drawCircle(if (enabled || busy) AppColors.Coral else AppColors.Coral.copy(alpha = 0.4f), face)
             },
         contentAlignment = Alignment.Center,
     ) {
-        if (busy) CircularProgressIndicator(color = RetroColors.Cream, strokeWidth = 4.dp, modifier = Modifier.size(40.dp))
+        if (busy) CircularProgressIndicator(color = AppColors.OnAccent, strokeWidth = 3.dp, modifier = Modifier.size(36.dp))
     }
 }
 
-/** Off by default. Lights up mustard when switched on for this visit. */
+/** Off by default. Lights up amber when switched on for this visit. */
 @Composable
 private fun FlashButton(kind: FlashKind, on: Boolean, onToggle: () -> Unit) {
     if (kind == FlashKind.NONE) {
@@ -763,11 +762,12 @@ private fun FlashButton(kind: FlashKind, on: Boolean, onToggle: () -> Unit) {
         return
     }
     val what = if (kind == FlashKind.SCREEN) "Schermflits" else "Flitser"
-    RetroIconButton(
+    AppIconButton(
         icon = if (on) AppIcons.FlashOn else AppIcons.FlashOff,
         description = if (on) "$what staat aan. Tik om uit te zetten." else "$what staat uit. Tik om aan te zetten.",
         onClick = onToggle,
-        color = if (on) RetroColors.Mustard else RetroColors.Cream,
+        kind = if (on) IconButtonKind.Active else IconButtonKind.Outlined,
+        size = 56.dp,
         modifier = Modifier.testTag(CameraTags.FLASH),
     )
 }
@@ -776,14 +776,14 @@ private fun FlashButton(kind: FlashKind, on: Boolean, onToggle: () -> Unit) {
 private fun SavedControls(landscape: Boolean, modifier: Modifier, onRetake: () -> Unit, onDone: () -> Unit) {
     if (landscape) {
         Column(modifier, verticalArrangement = Arrangement.Center) {
-            RetroButton("Klaar", onClick = onDone, icon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(14.dp))
-            RetroButton("Opnieuw", onClick = onRetake, icon = AppIcons.Retake, color = RetroColors.Cream, contentColor = RetroColors.Navy, modifier = Modifier.fillMaxWidth())
+            AppButton("Klaar", onClick = onDone, icon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(12.dp))
+            AppButton("Opnieuw", onClick = onRetake, icon = AppIcons.Retake, kind = ButtonKind.Secondary, modifier = Modifier.fillMaxWidth())
         }
     } else {
         Row(modifier, horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            RetroButton("Opnieuw", onClick = onRetake, icon = AppIcons.Retake, color = RetroColors.Cream, contentColor = RetroColors.Navy, modifier = Modifier.weight(1f))
-            RetroButton("Klaar", onClick = onDone, icon = AppIcons.Check, modifier = Modifier.weight(1f))
+            AppButton("Opnieuw", onClick = onRetake, icon = AppIcons.Retake, kind = ButtonKind.Secondary, modifier = Modifier.weight(1f))
+            AppButton("Klaar", onClick = onDone, icon = AppIcons.Check, modifier = Modifier.weight(1f))
         }
     }
 }

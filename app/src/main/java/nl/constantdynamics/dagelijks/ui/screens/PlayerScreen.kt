@@ -26,13 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
-import androidx.core.view.WindowCompat
-import androidx.activity.compose.LocalActivity
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
+import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
-import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 
 /**
  * Plays a timelapse inside the app, with Android's own video player. The video keeps
@@ -53,21 +51,13 @@ fun PlayerScreen(
     val uri = remember(timelapse.nodeId) { repository.locationOf(timelapse).toUri() }
     var failed by remember { mutableStateOf(false) }
     val view = LocalView.current
-    val activity = LocalActivity.current
 
-    DisposableEffect(view, activity) {
+    DisposableEffect(view) {
         view.keepScreenOn = true
-        val bars = activity?.window?.let { WindowCompat.getInsetsController(it, view) }
-        bars?.isAppearanceLightStatusBars = false
-        bars?.isAppearanceLightNavigationBars = false
-        onDispose {
-            view.keepScreenOn = false
-            bars?.isAppearanceLightStatusBars = true
-            bars?.isAppearanceLightNavigationBars = true
-        }
+        onDispose { view.keepScreenOn = false }
     }
 
-    Box(Modifier.fillMaxSize().background(RetroColors.CameraBackground)) {
+    Box(Modifier.fillMaxSize().background(AppColors.Ground)) {
         Box(
             Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
             contentAlignment = Alignment.Center,
@@ -76,7 +66,7 @@ fun PlayerScreen(
                 Text(
                     "Deze video kon niet worden afgespeeld.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = RetroColors.Cream,
+                    color = AppColors.Text,
                     textAlign = TextAlign.Center,
                 )
             } else {
@@ -99,7 +89,7 @@ fun PlayerScreen(
                     onRelease = { it.stopPlayback() },
                 )
             }
-            RetroIconButton(
+            AppIconButton(
                 AppIcons.Close,
                 "Sluiten",
                 onClick = onBack,

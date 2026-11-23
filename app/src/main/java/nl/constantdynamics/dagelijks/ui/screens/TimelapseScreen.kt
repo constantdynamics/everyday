@@ -36,9 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -51,7 +49,6 @@ import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.core.Days
 import nl.constantdynamics.dagelijks.core.DutchText
 import nl.constantdynamics.dagelijks.core.ProjectSettings
-import nl.constantdynamics.dagelijks.core.TimelapseMath
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.storage.Timelapse
@@ -59,17 +56,20 @@ import nl.constantdynamics.dagelijks.timelapse.RenderState
 import nl.constantdynamics.dagelijks.timelapse.TimelapseRequest
 import nl.constantdynamics.dagelijks.ui.Format
 import nl.constantdynamics.dagelijks.ui.LocalServices
+import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.AppButton
+import nl.constantdynamics.dagelijks.ui.components.AppCard
+import nl.constantdynamics.dagelijks.ui.components.AppDialog
+import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
+import nl.constantdynamics.dagelijks.ui.components.AppSlider
+import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.ChoiceTile
-import nl.constantdynamics.dagelijks.ui.components.RetroBackground
-import nl.constantdynamics.dagelijks.ui.components.RetroButton
-import nl.constantdynamics.dagelijks.ui.components.RetroCard
-import nl.constantdynamics.dagelijks.ui.components.RetroDialog
-import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
-import nl.constantdynamics.dagelijks.ui.components.RetroSlider
-import nl.constantdynamics.dagelijks.ui.components.Ribbon
+import nl.constantdynamics.dagelijks.ui.components.DisplayTitle
+import nl.constantdynamics.dagelijks.ui.components.NoticeCard
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.components.SectionLabel
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -143,27 +143,31 @@ fun TimelapseScreen(
         )
     }
 
-    RetroBackground(Modifier.fillMaxSize(), sunburst = false) {
+    AppBackground(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ScreenHeader(title = "Timelapse", onBack = onBack)
+            ScreenHeader(title = "Timelapse", onBack = onBack, modifier = Modifier.padding(bottom = 6.dp))
 
             if (project.photos.isEmpty()) {
-                RetroCard(Modifier.fillMaxWidth()) {
-                    Text("Er zijn nog geen foto's om een timelapse van te maken.", style = MaterialTheme.typography.bodyLarge)
+                AppCard(Modifier.fillMaxWidth()) {
+                    Text(
+                        "Er zijn nog geen foto's om een timelapse van te maken.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.TextMuted,
+                    )
                 }
             } else {
-                RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Snelheid", style = MaterialTheme.typography.titleLarge)
-                        Text(DutchText.photosPerSecond(speed), style = MaterialTheme.typography.bodyLarge)
-                        RetroSlider(
+                        Text("Snelheid", style = MaterialTheme.typography.titleMedium)
+                        Text(DutchText.photosPerSecond(speed), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextMuted)
+                        AppSlider(
                             value = speed.toFloat(),
                             onValueChange = { speed = it.roundToInt() },
                             valueRange = ProjectSettings.MIN_TIMELAPSE_FPS.toFloat()..ProjectSettings.MAX_TIMELAPSE_FPS.toFloat(),
@@ -174,46 +178,48 @@ fun TimelapseScreen(
                     }
                 }
 
-                RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Periode", style = MaterialTheme.typography.titleLarge)
+                        Text("Periode", style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             ChoiceTile(selected = from != null, onClick = { pickingFrom = true }, modifier = Modifier.weight(1f)) {
-                                Text("Van", style = MaterialTheme.typography.labelMedium)
+                                Text("Van", style = MaterialTheme.typography.labelSmall, color = AppColors.TextMuted)
                                 Text(Format.date(from ?: firstDate!!), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                             }
                             ChoiceTile(selected = to != null, onClick = { pickingTo = true }, modifier = Modifier.weight(1f)) {
-                                Text("Tot en met", style = MaterialTheme.typography.labelMedium)
+                                Text("Tot en met", style = MaterialTheme.typography.labelSmall, color = AppColors.TextMuted)
                                 Text(Format.date(to ?: lastDate!!), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                             }
                         }
                         if (from != null || to != null) {
                             TextButton(onClick = { fromText = null; toText = null }) {
-                                Text("Gebruik weer alle foto's", style = MaterialTheme.typography.labelLarge, color = RetroColors.CoralDark)
+                                Text("Gebruik weer alle foto's", style = MaterialTheme.typography.labelLarge, color = AppColors.Amber)
                             }
                         }
                     }
                 }
 
-                RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Datum in beeld", style = MaterialTheme.typography.titleLarge)
+                        Text("Datum in beeld", style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             ChoiceTile(selected = !showDate, onClick = { showDate = false }, modifier = Modifier.weight(1f)) {
-                                Text("Zonder", style = MaterialTheme.typography.titleMedium)
+                                Text("Zonder", style = MaterialTheme.typography.titleSmall)
                             }
                             ChoiceTile(selected = showDate, onClick = { showDate = true }, modifier = Modifier.weight(1f)) {
-                                Text("Met datum", style = MaterialTheme.typography.titleMedium)
+                                Text("Met datum", style = MaterialTheme.typography.titleSmall)
                             }
                         }
                     }
                 }
 
-                RetroCard(Modifier.fillMaxWidth(), fill = RetroColors.Mustard, contentPadding = PaddingValues(18.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
+                NoticeCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        DisplayTitle(
                             text = if (chosen.isEmpty()) "Geen foto's in deze periode" else DutchText.timelapseSummary(chosen.size, speed),
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = AppColors.Amber,
+                            maxLines = 2,
                         )
                         Text(
                             "MP4-video van ${size.width} × ${size.height} pixels. Hij komt in de map “timelapses” van dit project.",
@@ -225,14 +231,14 @@ fun TimelapseScreen(
                 when {
                     runningHere -> RenderProgress(running, onCancel = renderer::cancel)
 
-                    running != null -> RetroCard(Modifier.fillMaxWidth()) {
+                    running != null -> AppCard(Modifier.fillMaxWidth()) {
                         Text(
                             "Er wordt al een timelapse gemaakt voor een ander project. Wacht tot die klaar is.",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
 
-                    else -> RetroButton(
+                    else -> AppButton(
                         text = "Maak timelapse",
                         onClick = ::start,
                         icon = AppIcons.Film,
@@ -243,7 +249,7 @@ fun TimelapseScreen(
             }
 
             if (project.timelapses.isNotEmpty()) {
-                Text("Je timelapses", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 6.dp))
+                SectionLabel("Je timelapses", rule = true, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
                 project.timelapses.forEach { timelapse ->
                     TimelapseRow(timelapse, onPlay = { onPlay(timelapse) }, onDelete = { deleting = timelapse })
                 }
@@ -255,7 +261,7 @@ fun TimelapseScreen(
     // --- Result of a render --------------------------------------------------------------
     when (val state = renderState) {
         is RenderState.Finished -> if (state.projectFolderName == project.folderName) {
-            RetroDialog(
+            AppDialog(
                 title = "Je timelapse is klaar!",
                 onDismiss = renderer::acknowledge,
                 confirmText = "Bekijk",
@@ -277,7 +283,7 @@ fun TimelapseScreen(
                         Text(
                             "${DutchText.photoCount(state.photosSkipped)} kon niet worden gelezen en is overgeslagen.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = RetroColors.CoralDark,
+                            color = AppColors.Coral,
                         )
                     }
                 }
@@ -285,13 +291,13 @@ fun TimelapseScreen(
         }
 
         is RenderState.Failed -> if (state.projectFolderName == project.folderName) {
-            RetroDialog(
+            AppDialog(
                 title = "Dat ging niet goed",
                 onDismiss = renderer::acknowledge,
                 confirmText = "Oké",
                 onConfirm = renderer::acknowledge,
                 dismissText = null,
-                confirmColor = RetroColors.Mustard,
+                confirmKind = ButtonKind.Secondary,
             ) {
                 Text(
                     "De timelapse kon niet worden gemaakt. Controleer of er genoeg ruimte vrij is op je telefoon en probeer het opnieuw." +
@@ -305,7 +311,7 @@ fun TimelapseScreen(
     }
 
     deleting?.let { timelapse ->
-        RetroDialog(
+        AppDialog(
             title = "Timelapse verwijderen?",
             onDismiss = { deleting = null },
             confirmText = "Ja, verwijder",
@@ -344,9 +350,9 @@ fun TimelapseScreen(
 
 @Composable
 private fun RenderProgress(state: RenderState.Running, onCancel: () -> Unit) {
-    RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+    AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Ribbon("even geduld…", tilt = -2f)
+            SectionLabel("even geduld")
             Text(
                 text = if (state.saving) "De video wordt opgeslagen…" else "Foto ${state.photosDone} van ${state.photosTotal}",
                 style = MaterialTheme.typography.titleMedium,
@@ -355,12 +361,12 @@ private fun RenderProgress(state: RenderState.Running, onCancel: () -> Unit) {
             Text(
                 "Laat de app open tot de video klaar is. Het scherm blijft vanzelf aan.",
                 style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextMuted,
             )
-            RetroButton(
+            AppButton(
                 "Annuleren",
                 onClick = onCancel,
-                color = RetroColors.Cream,
-                contentColor = RetroColors.Navy,
+                kind = ButtonKind.Secondary,
                 enabled = !state.saving,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -372,36 +378,22 @@ private fun RenderProgress(state: RenderState.Running, onCancel: () -> Unit) {
 private fun ProgressBar(progress: Float, modifier: Modifier = Modifier) {
     Box(
         modifier
-            .height(22.dp)
+            .height(8.dp)
             .semantics { progressBarRangeInfo = ProgressBarRangeInfo(progress.coerceIn(0f, 1f), 0f..1f) }
             .drawBehind {
                 val radius = CornerRadius(size.height / 2)
-                val border = 2.5.dp.toPx()
-                drawRoundRect(RetroColors.CreamDark, cornerRadius = radius)
+                drawRoundRect(AppColors.Track, cornerRadius = radius)
                 val filled = (size.width * progress.coerceIn(0f, 1f)).coerceAtLeast(size.height)
-                drawRoundRect(RetroColors.Coral, size = Size(filled, size.height), cornerRadius = radius)
-                drawRoundRect(
-                    RetroColors.Navy,
-                    topLeft = Offset(border / 2, border / 2),
-                    size = Size(size.width - border, size.height - border),
-                    cornerRadius = radius,
-                    style = Stroke(border),
-                )
+                drawRoundRect(AppColors.Amber, size = Size(filled, size.height), cornerRadius = radius)
             },
     )
 }
 
 @Composable
 private fun TimelapseRow(timelapse: Timelapse, onPlay: () -> Unit, onDelete: () -> Unit) {
-    RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(12.dp)) {
+    AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            RetroIconButton(
-                AppIcons.Play,
-                "Bekijk ${timelapse.name}",
-                onClick = onPlay,
-                color = RetroColors.Coral,
-                contentColor = RetroColors.Cream,
-            )
+            AppIconButton(AppIcons.Play, "Bekijk ${timelapse.name}", onClick = onPlay)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -410,10 +402,10 @@ private fun TimelapseRow(timelapse: Timelapse, onPlay: () -> Unit, onDelete: () 
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(Format.fileSize(timelapse.size), style = MaterialTheme.typography.bodySmall)
+                Text(Format.fileSize(timelapse.size), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
             }
             Spacer(Modifier.width(8.dp))
-            RetroIconButton(AppIcons.Delete, "Verwijder ${timelapse.name}", onClick = onDelete, size = 44.dp)
+            AppIconButton(AppIcons.Delete, "Verwijder ${timelapse.name}", onClick = onDelete)
         }
     }
 }

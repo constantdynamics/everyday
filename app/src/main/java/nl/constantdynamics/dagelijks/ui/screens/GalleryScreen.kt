@@ -36,10 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.core.Days
@@ -49,21 +46,24 @@ import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.Format
 import nl.constantdynamics.dagelijks.ui.LocalServices
+import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.AppButton
+import nl.constantdynamics.dagelijks.ui.components.AppCard
+import nl.constantdynamics.dagelijks.ui.components.AppDialog
+import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
+import nl.constantdynamics.dagelijks.ui.components.AppTextField
+import nl.constantdynamics.dagelijks.ui.components.ButtonKind
+import nl.constantdynamics.dagelijks.ui.components.DisplayTitle
+import nl.constantdynamics.dagelijks.ui.components.Hairline
 import nl.constantdynamics.dagelijks.ui.components.PhotoImage
 import nl.constantdynamics.dagelijks.ui.components.Pill
-import nl.constantdynamics.dagelijks.ui.components.RetroBackground
-import nl.constantdynamics.dagelijks.ui.components.RetroButton
-import nl.constantdynamics.dagelijks.ui.components.RetroCard
-import nl.constantdynamics.dagelijks.ui.components.RetroDialog
-import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
-import nl.constantdynamics.dagelijks.ui.components.RetroTextField
-import nl.constantdynamics.dagelijks.ui.components.Ribbon
+import nl.constantdynamics.dagelijks.ui.components.PillTone
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
+import nl.constantdynamics.dagelijks.ui.components.SectionLabel
+import nl.constantdynamics.dagelijks.ui.components.panel
 import nl.constantdynamics.dagelijks.ui.components.rememberToday
-import nl.constantdynamics.dagelijks.ui.components.retroBox
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
-import nl.constantdynamics.dagelijks.ui.theme.RetroType
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 import java.time.YearMonth
 
 /** What the gallery grid shows: month headings with the photos of that month under them. */
@@ -102,56 +102,82 @@ fun GalleryScreen(
         }
     }
 
-    RetroBackground(Modifier.fillMaxSize(), sunburst = false) {
+    AppBackground(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(if (ratio.isLandscape) 2 else 3),
             modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
-            contentPadding = PaddingValues(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 28.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item(key = "kop", span = { GridItemSpan(maxLineSpan) }) {
-                Column(Modifier.padding(end = 4.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    ScreenHeader(title = project.settings.name, onBack = onBack, fontSize = 32.sp) {
-                        Spacer(Modifier.width(8.dp))
-                        RetroIconButton(AppIcons.Edit, "Project aanpassen", onClick = { showSettings = true }, size = 44.dp)
+                Column {
+                    ScreenHeader(title = project.settings.name, onBack = onBack) {
+                        Spacer(Modifier.width(10.dp))
+                        AppIconButton(AppIcons.Edit, "Project aanpassen", onClick = { showSettings = true })
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Ribbon(
-                            text = if (project.photos.isEmpty()) "nog leeg" else DutchText.photoCount(project.photos.size),
-                            color = RetroColors.Mustard,
-                            textColor = RetroColors.Navy,
-                            tilt = -2f,
-                        )
-                        Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.height(22.dp))
+                    Hairline()
+                    Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = if (project.photos.isEmpty()) "Nog geen foto's" else DutchText.photoCount(project.photos.size),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            project.photos.firstOrNull()?.let { first ->
+                                Text(
+                                    "sinds ${Format.date(first.date)}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.TextMuted,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
                         if (takenToday) {
-                            Pill("Vandaag gelukt", icon = AppIcons.Check, color = RetroColors.Cream)
+                            Pill("Vandaag gelukt", tone = PillTone.Done, icon = AppIcons.Check)
+                        } else {
+                            Pill("Vandaag nog niet")
                         }
                     }
-                    project.photos.firstOrNull()?.let { first ->
-                        Text("sinds ${Format.date(first.date)}", style = MaterialTheme.typography.titleSmall)
+                    Hairline()
+                    Spacer(Modifier.height(18.dp))
+
+                    // One hot button: today's photo while it still has to be taken, the timelapse after that.
+                    val photoButton: @Composable (ButtonKind) -> Unit = { kind ->
+                        AppButton(
+                            text = if (takenToday) "Foto van vandaag opnieuw maken" else "Maak de foto van vandaag",
+                            onClick = onTakePhoto,
+                            icon = AppIcons.Camera,
+                            kind = kind,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
-                    RetroButton(
-                        text = if (takenToday) "Foto van vandaag opnieuw maken" else "Maak de foto van vandaag",
-                        onClick = onTakePhoto,
-                        icon = AppIcons.Camera,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    RetroButton(
-                        text = "Maak timelapse",
-                        onClick = onTimelapse,
-                        icon = AppIcons.Film,
-                        color = RetroColors.Mustard,
-                        contentColor = RetroColors.Navy,
-                        enabled = project.photos.isNotEmpty() || project.timelapses.isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    if (project.photos.isEmpty()) {
-                        RetroCard(Modifier.fillMaxWidth()) {
-                            Text(
-                                "Hier komen je foto's te staan, één per dag. Maak de eerste!",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
+                    val timelapseButton: @Composable (ButtonKind) -> Unit = { kind ->
+                        AppButton(
+                            text = "Maak timelapse",
+                            onClick = onTimelapse,
+                            icon = AppIcons.Film,
+                            kind = kind,
+                            enabled = project.photos.isNotEmpty() || project.timelapses.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (takenToday) {
+                            timelapseButton(ButtonKind.Primary)
+                            photoButton(ButtonKind.Secondary)
+                        } else {
+                            photoButton(ButtonKind.Primary)
+                            timelapseButton(ButtonKind.Secondary)
+                        }
+                        if (project.photos.isEmpty()) {
+                            AppCard(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                                Text(
+                                    "Hier komen je foto's te staan, één per dag. Maak de eerste!",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.TextMuted,
+                                )
+                            }
                         }
                     }
                 }
@@ -168,17 +194,17 @@ fun GalleryScreen(
                 span = { item -> if (item is GalleryItem.Month) GridItemSpan(maxLineSpan) else GridItemSpan(1) },
             ) { item ->
                 when (item) {
-                    is GalleryItem.Month -> Text(
+                    is GalleryItem.Month -> SectionLabel(
                         text = Format.month(item.month.atDay(1)),
-                        style = RetroType.scriptLarge,
-                        color = RetroColors.Navy,
-                        modifier = Modifier.padding(top = 10.dp, start = 2.dp),
+                        rule = true,
+                        modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp),
                     )
 
                     is GalleryItem.Picture -> PhotoTile(
                         repository = repository,
                         photo = item.photo,
                         ratio = ratio.value,
+                        isToday = item.photo.date == today,
                         onClick = { onOpenPhoto(item.photo) },
                     )
                 }
@@ -196,29 +222,27 @@ fun GalleryScreen(
     }
 }
 
-/** One photo in the grid, framed like a small print with its date on the edge. */
+/** One photo in the grid with its date under it; today's date lights up. */
 @Composable
-private fun PhotoTile(repository: ProjectRepository, photo: Photo, ratio: Float, onClick: () -> Unit) {
+private fun PhotoTile(repository: ProjectRepository, photo: Photo, ratio: Float, isToday: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(8.dp)
     Column(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .retroBox(fill = Color.White, corner = 6.dp, border = 2.dp, shadow = DpOffset(3.dp, 3.dp))
-            .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 2.dp),
+        modifier = Modifier.clip(shape).clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         PhotoImage(
             repository = repository,
             photo = photo,
             maxSide = 360,
             contentDescription = "Foto van ${Format.date(photo.date)}",
-            modifier = Modifier.fillMaxWidth().aspectRatio(ratio).clip(RoundedCornerShape(2.dp)),
+            modifier = Modifier.fillMaxWidth().aspectRatio(ratio).clip(shape),
         )
         Text(
             text = Format.shortDate(photo.date),
             style = MaterialTheme.typography.labelMedium,
-            color = RetroColors.Navy,
+            color = if (isToday) AppColors.Amber else AppColors.TextMuted,
             maxLines = 1,
-            modifier = Modifier.padding(top = 2.dp),
         )
     }
 }
@@ -255,7 +279,7 @@ private fun ProjectSettingsDialog(
     }
 
     if (confirmDelete) {
-        RetroDialog(
+        AppDialog(
             title = "Project verwijderen?",
             onDismiss = { confirmDelete = false },
             confirmText = "Ja, verwijder alles",
@@ -280,46 +304,41 @@ private fun ProjectSettingsDialog(
     Dialog(onDismissRequest = onClose) {
         Column(
             modifier = Modifier
-                .retroBox(fill = RetroColors.Cream, corner = 24.dp, shadow = DpOffset(6.dp, 7.dp))
+                .panel(corner = 24.dp, edge = AppColors.Outline)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Project aanpassen", style = MaterialTheme.typography.headlineMedium)
+            DisplayTitle("Project aanpassen", style = MaterialTheme.typography.headlineMedium)
 
-            Text("Naam", style = MaterialTheme.typography.titleSmall)
-            RetroTextField(state = nameField, modifier = Modifier.fillMaxWidth())
+            Text("Naam", style = MaterialTheme.typography.titleSmall, color = AppColors.TextMuted)
+            AppTextField(state = nameField, modifier = Modifier.fillMaxWidth())
 
-            Text("Camera", style = MaterialTheme.typography.titleSmall)
+            Text("Camera", style = MaterialTheme.typography.titleSmall, color = AppColors.TextMuted)
             LensChoice(lens, onChange = { lens = it })
 
-            Text("Vorm van de foto", style = MaterialTheme.typography.titleSmall)
+            Text("Vorm van de foto", style = MaterialTheme.typography.titleSmall, color = AppColors.TextMuted)
             AspectRatioChoice(aspectRatio, onChange = { aspectRatio = it }, enabled = project.canChangeAspectRatio)
             if (!project.canChangeAspectRatio) {
                 Text(
                     "De vorm ligt vast omdat er al foto's zijn. Anders past de vorige foto niet meer over de nieuwe.",
                     style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextMuted,
                 )
             }
             if (deleteFailed) {
-                Text("Het verwijderen is niet gelukt.", style = MaterialTheme.typography.bodyMedium, color = RetroColors.CoralDark)
+                Text("Het verwijderen is niet gelukt.", style = MaterialTheme.typography.bodyMedium, color = AppColors.Coral)
             }
 
             Spacer(Modifier.height(2.dp))
-            RetroButton("Opslaan", onClick = ::save, icon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
-            RetroButton(
-                "Annuleren",
-                onClick = onClose,
-                color = RetroColors.Cream,
-                contentColor = RetroColors.Navy,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            AppButton("Opslaan", onClick = ::save, icon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
+            AppButton("Annuleren", onClick = onClose, kind = ButtonKind.Secondary, modifier = Modifier.fillMaxWidth())
             Box(Modifier.fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
                 Text(
                     "Dit project verwijderen",
                     style = MaterialTheme.typography.labelLarge,
-                    color = RetroColors.CoralDark,
-                    modifier = Modifier.clickable { confirmDelete = true }.padding(10.dp),
+                    color = AppColors.Coral,
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { confirmDelete = true }.padding(10.dp),
                 )
             }
         }
