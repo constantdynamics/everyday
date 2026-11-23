@@ -1,5 +1,6 @@
 *.iml
 .gradle/
+.kotlin/
 /local.properties
 /.idea/
 .DS_Store
@@ -9,6 +10,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Signing keys and their passwords never belong in version control.
 *.jks
 *.keystore
-!app/schemas/
+*.p12
+sleutel.properties
+keystore.properties

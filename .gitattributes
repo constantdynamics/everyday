@@ -1,0 +1,3 @@
+# Windows command files must keep their Windows line endings, however the code is
+# downloaded (git, or "Download ZIP" on GitHub).
+*.bat -text
