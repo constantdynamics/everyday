@@ -60,10 +60,10 @@ import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
 import nl.constantdynamics.dagelijks.ui.components.RetroTextField
 import nl.constantdynamics.dagelijks.ui.components.Ribbon
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
+import nl.constantdynamics.dagelijks.ui.components.rememberToday
 import nl.constantdynamics.dagelijks.ui.components.retroBox
 import nl.constantdynamics.dagelijks.ui.theme.RetroColors
 import nl.constantdynamics.dagelijks.ui.theme.RetroType
-import java.time.LocalDate
 import java.time.YearMonth
 
 /** What the gallery grid shows: month headings with the photos of that month under them. */
@@ -87,7 +87,7 @@ fun GalleryScreen(
     onDeleted: () -> Unit,
 ) {
     var showSettings by rememberSaveable { mutableStateOf(false) }
-    val today = LocalDate.now()
+    val today = rememberToday()
     val takenToday = Days.hasPhotoOn(project.dates, today)
     val ratio = project.settings.aspectRatio
 
@@ -132,7 +132,7 @@ fun GalleryScreen(
                         Text("sinds ${Format.date(first.date)}", style = MaterialTheme.typography.titleSmall)
                     }
                     RetroButton(
-                        text = if (takenToday) "Foto van vandaag opnieuw" else "Maak de foto van vandaag",
+                        text = if (takenToday) "Foto van vandaag opnieuw maken" else "Maak de foto van vandaag",
                         onClick = onTakePhoto,
                         icon = AppIcons.Camera,
                         modifier = Modifier.fillMaxWidth(),

@@ -48,6 +48,7 @@ import nl.constantdynamics.dagelijks.ui.components.RetroCard
 import nl.constantdynamics.dagelijks.ui.components.RetroIconButton
 import nl.constantdynamics.dagelijks.ui.components.RetroTitle
 import nl.constantdynamics.dagelijks.ui.components.Ribbon
+import nl.constantdynamics.dagelijks.ui.components.rememberToday
 import nl.constantdynamics.dagelijks.ui.components.retroBox
 import nl.constantdynamics.dagelijks.ui.theme.RetroColors
 import java.time.LocalDate
@@ -65,7 +66,7 @@ fun HomeScreen(
     onNewProject: () -> Unit,
     onAbout: () -> Unit,
 ) {
-    val today = LocalDate.now()
+    val today = rememberToday()
 
     RetroBackground(Modifier.fillMaxSize()) {
         LazyColumn(

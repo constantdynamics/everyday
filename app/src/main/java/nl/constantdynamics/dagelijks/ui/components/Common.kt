@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,10 +23,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import nl.constantdynamics.dagelijks.storage.Photo
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.LocalServices
 import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import java.time.LocalDate
+
+/**
+ * Today's date, refreshed whenever the app comes back to the foreground. Without that
+ * an app left open overnight would keep saying that today's photo has been taken.
+ */
+@Composable
+fun rememberToday(): LocalDate {
+    var today by remember { mutableStateOf(LocalDate.now()) }
+    LifecycleResumeEffect(Unit) {
+        today = LocalDate.now()
+        onPauseOrDispose {}
+    }
+    return today
+}
 
 /** Loads a photo at a suitable size; null while it is still loading. */
 @Composable
