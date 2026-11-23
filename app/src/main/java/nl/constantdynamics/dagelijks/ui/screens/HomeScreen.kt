@@ -111,7 +111,7 @@ fun HomeScreen(
                     }
                 }
 
-                else -> items(projects, key = { it.folderName }) { project ->
+                else -> items(projects, key = { "project-${it.folderName}" }) { project ->
                     ProjectCard(
                         repository = repository,
                         project = project,

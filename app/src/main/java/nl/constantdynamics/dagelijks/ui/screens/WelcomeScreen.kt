@@ -132,7 +132,11 @@ fun WelcomeScreen() {
             Spacer(Modifier.height(20.dp))
             RetroButton(
                 text = if (busy) "Even geduld…" else "Kies een map",
-                onClick = { picker.launch(StorageAccess.suggestedStartFolder) },
+                onClick = {
+                    // A phone without the system folder picker is rare, but it must not crash the app.
+                    runCatching { picker.launch(StorageAccess.suggestedStartFolder) }
+                        .onFailure { problem = "Je telefoon heeft geen mappenkiezer. Zonder kan de app geen map gebruiken." }
+                },
                 icon = AppIcons.Folder,
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth(),

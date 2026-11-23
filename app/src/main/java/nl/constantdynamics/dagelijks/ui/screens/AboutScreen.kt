@@ -75,7 +75,10 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
                 problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = RetroColors.CoralDark) }
                 RetroButton(
                     "Andere map kiezen",
-                    onClick = { picker.launch(StorageAccess.suggestedStartFolder) },
+                    onClick = {
+                        runCatching { picker.launch(StorageAccess.suggestedStartFolder) }
+                            .onFailure { problem = "De mappenkiezer van je telefoon kon niet worden geopend." }
+                    },
                     icon = AppIcons.Folder,
                     color = RetroColors.Cream,
                     contentColor = RetroColors.Navy,

@@ -23,6 +23,8 @@ class AppServices(
     val timelapseRenderer: TimelapseRenderer,
     /** Takes the folder the user picked in the system folder picker into use. */
     val chooseFolder: suspend (Uri) -> StorageAccess.PickResult,
+    /** Checks whether the chosen folder is still there; if not, the app asks for it again. */
+    val recheckFolder: suspend () -> Unit = {},
 )
 
 val LocalServices = staticCompositionLocalOf<AppServices> { error("No AppServices provided") }

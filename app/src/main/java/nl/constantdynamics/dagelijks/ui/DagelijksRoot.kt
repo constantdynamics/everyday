@@ -146,8 +146,12 @@ private fun MainNavigation(repository: ProjectRepository, location: String) {
     val projects by repository.projects.collectAsStateWithLifecycle()
 
     // Photos may have been added or removed from a computer while the app was away.
+    // If the whole folder turns out to be gone, the app asks for it again.
+    val services = LocalServices.current
     LifecycleResumeEffect(repository) {
-        scope.launch { runCatching { repository.refresh() } }
+        scope.launch {
+            if (runCatching { repository.refresh() }.isFailure) services.recheckFolder()
+        }
         onPauseOrDispose {}
     }
 

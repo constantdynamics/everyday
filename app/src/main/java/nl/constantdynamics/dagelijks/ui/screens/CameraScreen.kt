@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.view.Surface
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -226,6 +227,8 @@ fun CameraScreen(
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         onClose()
     }
+    // The back gesture leaves the same way as the close button, turning the screen upright first.
+    BackHandler(onBack = ::close)
 
     // --- Camera -----------------------------------------------------------------------------
     val session = remember { CameraSession(context.applicationContext) }

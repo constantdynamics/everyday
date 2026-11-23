@@ -48,6 +48,7 @@ class AppContainer(private val application: Application) {
         imageLoader = imageLoader,
         timelapseRenderer = timelapseRenderer,
         chooseFolder = ::chooseFolder,
+        recheckFolder = ::reloadFolder,
     )
     private val folderState = MutableStateFlow<FolderState>(FolderState.Loading)
     val folder: StateFlow<FolderState> = folderState.asStateFlow()
@@ -64,8 +65,9 @@ class AppContainer(private val application: Application) {
     }
 
     /**
-     * Looks again whether a folder was chosen earlier, the way a freshly started app
-     * does. Used by tests to play "the app was reinstalled".
+     * Looks again whether the folder chosen earlier is still there and still
+     * accessible, the way a freshly started app does. When it is gone (deleted or
+     * renamed from a computer, or the app was reinstalled) the app asks for it again.
      */
     suspend fun reloadFolder() {
         val opened = runCatching { storageAccess.openStored() }.getOrNull()

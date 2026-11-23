@@ -45,6 +45,9 @@ class FolderDeviceTest {
 
     private val mainFolder = "/sdcard/Documents/Dagelijks"
 
+    // One word: the shell commands of the test framework cannot quote a name with a space in it.
+    private val project = "Gezicht"
+
     @get:Rule(order = 0)
     val freshStart = object : ExternalResource() {
         override fun before() {
@@ -114,14 +117,14 @@ class FolderDeviceTest {
         // --- A project and a photo, all through the Storage Access Framework ------------------
         compose.onNodeWithText("Nieuw project").performScrollTo().performClick()
         waitForText("Maak project")
-        compose.onNode(hasSetTextAction()).performTextInput("Mijn gezicht")
+        compose.onNode(hasSetTextAction()).performTextInput(project)
         compose.onNodeWithText("Achterkant").performClick()
         compose.onNodeWithText("Maak project").performScrollTo().performClick()
         waitForText("Maak timelapse")
 
-        val settings = shell("cat '$mainFolder/Mijn gezicht/project.json'")
+        val settings = shell("cat $mainFolder/$project/project.json")
         Log.i("DagelijksTest", "project.json on disk: $settings")
-        assertTrue(settings, settings.contains("\"naam\": \"Mijn gezicht\""))
+        assertTrue(settings, settings.contains("\"naam\": \"$project\""))
         assertTrue(settings, settings.contains("\"camera\": \"achter\""))
         assertTrue(settings, settings.contains("\"beeldverhouding\": \"3:4\""))
 
@@ -133,14 +136,14 @@ class FolderDeviceTest {
         waitForText("Vandaag gelukt")
         DeviceFixtures.screenshot("galerij-na-eerste-foto")
 
-        val files = shell("ls -a '$mainFolder/Mijn gezicht'").lines().map { it.trim() }.filter { it.isNotEmpty() && it != "." && it != ".." }
+        val files = shell("ls -a $mainFolder/$project").lines().map { it.trim() }.filter { it.isNotEmpty() && it != "." && it != ".." }
         assertEquals("files in the project folder: $files", setOf("project.json", "$today.jpg"), files.toSet())
-        val size = shell("stat -c %s '$mainFolder/Mijn gezicht/$today.jpg'").trim().toLong()
+        val size = shell("stat -c %s $mainFolder/$project/$today.jpg").trim().toLong()
         assertTrue("the stored photo is only $size bytes", size > 20_000)
 
         // --- The gallery and Google Photos must not see the photo -----------------------------
         // A control picture in the ordinary Pictures folder proves that the media scan does run.
-        shell("cp '$mainFolder/Mijn gezicht/$today.jpg' /sdcard/Pictures/dagelijks-controle.jpg")
+        shell("cp $mainFolder/$project/$today.jpg /sdcard/Pictures/dagelijks-controle.jpg")
         shell("content call --uri content://media --method scan_volume --arg external_primary")
         shell("am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/dagelijks-controle.jpg")
         var images = ""
@@ -162,7 +165,7 @@ class FolderDeviceTest {
         pickDocumentsFolder("mapkiezer-na-herinstallatie")
 
         // Same folder picked again: the project, its settings and its photo are back.
-        waitForText("Mijn gezicht")
+        waitForText(project)
         waitForText("Vandaag gelukt")
         waitForText("1 foto")
         DeviceFixtures.screenshot("start-na-herinstallatie")
