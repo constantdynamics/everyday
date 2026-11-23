@@ -3,7 +3,7 @@
 Zo zet je de app op je telefoon, werk je hem bij en maak je een reservekopie van je foto's.
 Je hoeft niet te kunnen programmeren. Alles wat je moet doen staat hier stap voor stap.
 
-De app heet **Everyday**. De map waarin hij je foto's bewaart heet **Dagelijks**.
+De app heet **Everyday**, en zo heet ook de map waarin hij je foto's bewaart.
 
 **Wat je nodig hebt**
 
@@ -82,7 +82,7 @@ Je telefoon moet toestaan dat je computer er een app op zet. Dat heet *USB-fouto
    De app opent vanzelf op je telefoon.
 
 > **Je ondertekensleutel.** Bij de eerste keer bouwen is er een map
-> `C:\Users\<jouw naam>\Dagelijks-sleutel` aangemaakt met twee bestanden (in de Verkenner
+> `C:\Users\<jouw naam>\Everyday-sleutel` aangemaakt met twee bestanden (in de Verkenner
 > heet `Users` "Gebruikers"). Dat is de
 > vaste sleutel waarmee jouw app wordt ondertekend. Dankzij die sleutel kan een nieuwe
 > versie straks over de oude heen worden geïnstalleerd. **Maak een reservekopie van deze
@@ -93,8 +93,8 @@ Je telefoon moet toestaan dat je computer er een app op zet. Dat heet *USB-fouto
 1. De app vraagt waar je foto's mogen staan. Tik op **Kies een map**.
 2. Er opent een scherm van Android zelf, in de map **Documenten**. Je hebt twee mogelijkheden:
    - **Aanbevolen:** tik rechtsboven op de drie puntjes of op het mapje met een plusje, kies
-     **Nieuwe map**, noem hem `Dagelijks` en tik op **OK**. Je staat nu in die nieuwe map.
-   - **Makkelijker:** doe niets en blijf in Documenten. De app maakt de map `Dagelijks` dan zelf aan.
+     **Nieuwe map**, noem hem `Everyday` en tik op **OK**. Je staat nu in die nieuwe map.
+   - **Makkelijker:** doe niets en blijf in Documenten. De app maakt de map `Everyday` dan zelf aan.
 3. Tik onderaan op **Deze map gebruiken** en daarna op **Toestaan**.
 4. Je bent nu op het startscherm. Tik op **Nieuw project** om te beginnen.
 
@@ -122,13 +122,13 @@ Dit gaat veel sneller dan de eerste keer.
 2. Veeg op je telefoon vanaf de bovenrand omlaag en tik op de melding
    **Dit apparaat wordt opgeladen via USB**. Kies **Bestandsoverdracht**.
 3. Open op je computer de **Verkenner** en klik links op **Deze pc**. Dubbelklik op je telefoon.
-4. Ga naar **Interne gedeelde opslag → Documents → Dagelijks**.
-5. Sleep de hele map **Dagelijks** naar een plek op je computer, bijvoorbeeld je map Afbeeldingen.
+4. Ga naar **Interne gedeelde opslag → Documents → Everyday**.
+5. Sleep de hele map **Everyday** naar een plek op je computer, bijvoorbeeld je map Afbeeldingen.
 
 Zo ziet de map eruit:
 
 ```
-Dagelijks
+Everyday
 ├── .nomedia                      zorgt dat je galerij en Google Foto's de map overslaan
 ├── Mijn gezicht
 │   ├── project.json              de instellingen van dit project
@@ -150,13 +150,13 @@ Twee dingen. Maak van allebei af en toe een kopie op een andere plek.
 
 | Wat | Waar | Waarom |
 |---|---|---|
-| De map **Dagelijks** | op je telefoon, in Documenten | Dit zijn je foto's, video's en instellingen. Er bestaat geen kopie in de cloud. |
-| De map **Dagelijks-sleutel** | op je computer, in `C:\Users\<jouw naam>` | Hiermee kun je de app bijwerken zonder hem eerst te verwijderen. |
+| De map **Everyday** | op je telefoon, in Documenten | Dit zijn je foto's, video's en instellingen. Er bestaat geen kopie in de cloud. |
+| De map **Everyday-sleutel** | op je computer, in `C:\Users\<jouw naam>` | Hiermee kun je de app bijwerken zonder hem eerst te verwijderen. |
 
 **Sleutel kwijt?** Dat kost je geen foto's. Verwijder de app van je telefoon, installeer hem
 opnieuw (er wordt dan een nieuwe sleutel gemaakt) en kies in de app dezelfde map. Alles is terug.
 
-**Nieuwe telefoon?** Kopieer de map `Dagelijks` van je computer naar **Documents** op de nieuwe
+**Nieuwe telefoon?** Kopieer de map `Everyday` van je computer naar **Documents** op de nieuwe
 telefoon, installeer de app en kies die map. Je projecten gaan verder waar je was.
 
 **App verwijderd?** Je foto's blijven staan, want ze staan in je eigen map en niet in de app.

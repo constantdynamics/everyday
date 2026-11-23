@@ -37,7 +37,7 @@ import nl.constantdynamics.dagelijks.timelapse.TimelapseRenderer
 import nl.constantdynamics.dagelijks.ui.AppServices
 import nl.constantdynamics.dagelijks.ui.LocalServices
 import nl.constantdynamics.dagelijks.ui.ShutterKeys
-import nl.constantdynamics.dagelijks.ui.components.RetroSlider
+import nl.constantdynamics.dagelijks.ui.components.AppSlider
 import nl.constantdynamics.dagelijks.ui.screens.CameraLayout
 import nl.constantdynamics.dagelijks.ui.screens.CameraTags
 import nl.constantdynamics.dagelijks.ui.screens.HomeScreen
@@ -84,7 +84,7 @@ class BehaviourTest {
 
     @Before
     fun setUp() {
-        root = temporary.newFolder("Dagelijks")
+        root = temporary.newFolder("Everyday")
         val tree = LocalFileTree(root)
         repository = ProjectRepository(tree, tree.pickedFolderId, Dispatchers.Unconfined, photoSize = ImageLoader::readSize)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
@@ -265,7 +265,7 @@ class BehaviourTest {
     fun `a slider with steps only lands on whole values`() {
         var value by mutableFloatStateOf(10f)
         show {
-            RetroSlider(
+            AppSlider(
                 value = value,
                 onValueChange = { value = it },
                 valueRange = 1f..30f,

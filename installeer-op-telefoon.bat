@@ -103,7 +103,7 @@ echo.
 echo   Klaar! Everyday staat op je telefoon.
 echo.
 echo   Denk aan een reservekopie van de map met je ondertekensleutel:
-echo     %USERPROFILE%\Dagelijks-sleutel
+echo     %USERPROFILE%\Everyday-sleutel
 echo.
 pause
 exit /b 0

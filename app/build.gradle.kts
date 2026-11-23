@@ -71,19 +71,19 @@ abstract class FixedSigningKey : ValueSource<Map<String, String>, FixedSigningKe
         val output = ByteArrayOutputStream()
         val result = execOperations.exec {
             // The password travels through the environment, not the command line.
-            environment("DAGELIJKS_SLEUTEL_WACHTWOORD", password)
+            environment("EVERYDAY_SLEUTEL_WACHTWOORD", password)
             commandLine(
                 keytool.absolutePath,
                 "-genkeypair", "-noprompt",
                 "-keystore", temporaryStore.absolutePath,
                 "-storetype", "PKCS12",
-                "-storepass:env", "DAGELIJKS_SLEUTEL_WACHTWOORD",
-                "-keypass:env", "DAGELIJKS_SLEUTEL_WACHTWOORD",
+                "-storepass:env", "EVERYDAY_SLEUTEL_WACHTWOORD",
+                "-keypass:env", "EVERYDAY_SLEUTEL_WACHTWOORD",
                 "-alias", KEY_ALIAS,
                 "-keyalg", "RSA",
                 "-keysize", "4096",
                 "-validity", "36500",
-                "-dname", "CN=Dagelijks, O=Persoonlijk gebruik, C=NL",
+                "-dname", "CN=Everyday, O=Persoonlijk gebruik, C=NL",
             )
             standardOutput = output
             errorOutput = output
@@ -122,9 +122,9 @@ abstract class FixedSigningKey : ValueSource<Map<String, String>, FixedSigningKe
     }
 
     private companion object {
-        const val STORE_NAME = "dagelijks-sleutel.p12"
+        const val STORE_NAME = "everyday-sleutel.p12"
         const val PROPERTIES_NAME = "sleutel.properties"
-        const val KEY_ALIAS = "dagelijks"
+        const val KEY_ALIAS = "everyday"
     }
 }
 
@@ -185,11 +185,11 @@ abstract class PrivacyCheck : DefaultTask() {
     }
 }
 
-// Default: <home>/Dagelijks-sleutel. Can be pointed elsewhere with the Gradle property
-// "dagelijks.sleutelmap" or the environment variable DAGELIJKS_SLEUTELMAP.
-val signingKeyDirectory: Provider<String> = providers.gradleProperty("dagelijks.sleutelmap")
-    .orElse(providers.environmentVariable("DAGELIJKS_SLEUTELMAP"))
-    .orElse(providers.systemProperty("user.home").map { File(it, "Dagelijks-sleutel").absolutePath })
+// Default: <home>/Everyday-sleutel. Can be pointed elsewhere with the Gradle property
+// "everyday.sleutelmap" or the environment variable EVERYDAY_SLEUTELMAP.
+val signingKeyDirectory: Provider<String> = providers.gradleProperty("everyday.sleutelmap")
+    .orElse(providers.environmentVariable("EVERYDAY_SLEUTELMAP"))
+    .orElse(providers.systemProperty("user.home").map { File(it, "Everyday-sleutel").absolutePath })
 
 val fixedSigningKey: Map<String, String> = providers.of(FixedSigningKey::class) {
     parameters.directory.set(signingKeyDirectory)

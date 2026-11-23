@@ -31,7 +31,7 @@ import java.util.regex.Pattern
 
 /**
  * The whole first-use story through the real system folder picker and the phone's
- * real storage: pick Documents, get a hidden "Dagelijks" folder, make a project,
+ * real storage: pick Documents, get a hidden "Everyday" folder, make a project,
  * take a photo, check the files on disk, check that the gallery does not see them,
  * and finally "reinstall" and get everything back by picking the folder again.
  */
@@ -43,7 +43,7 @@ class FolderDeviceTest {
     private val device = DeviceFixtures.device
     private val today: LocalDate = LocalDate.now()
 
-    private val mainFolder = "/sdcard/Documents/Dagelijks"
+    private val mainFolder = "/sdcard/Documents/Everyday"
 
     // One word: the shell commands of the test framework cannot quote a name with a space in it.
     private val project = "Gezicht"
@@ -166,7 +166,7 @@ class FolderDeviceTest {
         }
         Log.i("DagelijksTest", "images known to the gallery: $images")
         assertTrue("the control picture should be visible to the gallery: $images", images.contains("dagelijks-controle.jpg"))
-        assertFalse("photos in the Dagelijks folder must stay out of the gallery: $images", images.contains("Documents/Dagelijks"))
+        assertFalse("photos in the Everyday folder must stay out of the gallery: $images", images.contains("Documents/Everyday"))
 
         // --- "Reinstall": the app forgets everything, the folder stays -------------------------
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
@@ -181,6 +181,6 @@ class FolderDeviceTest {
         waitForText("Vandaag gelukt")
         waitForText("1 foto")
         DeviceFixtures.screenshot("start-na-herinstallatie")
-        assertEquals(listOf("Dagelijks"), shell("ls /sdcard/Documents").lines().map { it.trim() }.filter { it == "Dagelijks" })
+        assertEquals(listOf("Everyday"), shell("ls /sdcard/Documents").lines().map { it.trim() }.filter { it == "Everyday" })
     }
 }

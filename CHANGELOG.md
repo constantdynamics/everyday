@@ -17,8 +17,9 @@ geschiedenis van de repository.
 - Werkt vanaf Android 8 (minSdk 26) in plaats van Android 14.
 - Een eigen app-id (`nl.constantdynamics.dagelijks`), zodat de app nooit botst met een
   eerder geïnstalleerde versie.
-- De app heet Everyday. De map met je foto's heet Dagelijks, zoals in de opdracht.
-- Retro vormgeving met gebundelde fonts.
+- De app heet Everyday, en zo heten ook de map met je foto's en (met `-sleutel` erachter) de map
+  met de ondertekensleutel.
+- Een eigen vormgeving met gebundelde lettertypen.
 - Geen deelknop, geen importeren, geen bewerken, geen muziek.
 
 **Opgeleverd, in de volgorde van de opdracht**
@@ -27,7 +28,7 @@ geschiedenis van de repository.
    privacycontrole bij elke build, en een vaste ondertekensleutel die bij de eerste build
    buiten de repository wordt aangemaakt.
 2. *Opslagmap en projecten.* Map kiezen via het Storage Access Framework, beperkt tot de
-   opslag van de telefoon zelf. De app gebruikt altijd een eigen map `Dagelijks`.
+   opslag van de telefoon zelf. De app gebruikt altijd een eigen map `Everyday`.
 3. *Camera en opslaan.* CameraX met één gedeelde ViewPort voor preview en foto. De foto
    wordt bijgesneden, rechtop gezet, nooit gespiegeld en zonder metadata opgeslagen als
    `JJJJ-MM-DD.jpg` (JPEG-kwaliteit 95).
@@ -37,13 +38,17 @@ geschiedenis van de repository.
    na bevestiging.
 6. *Timelapse.* H.264 in MP4 met `MediaCodec` en `MediaMuxer`, 1 tot 30 foto's per
    seconde, optionele periode en datum in beeld, afspelen in de app.
-7. *Vormgeving.* Mint, koraal, mosterd, marineblauw en crème; titels met extrusie en
-   contour, lint-labels, korreltextuur, een rustig camerascherm en een retro icoon.
+7. *Vormgeving.* Het ontwerp "Nachtfilm": donker inktblauw, warm wit en amber, met koraalrood
+   alleen voor de sluiter en de ene actie die telt. Titels in Unbounded, tekst in Outfit,
+   dunne lijnen in plaats van randen en schaduwen, en een bijpassend icoon. De eigenaar koos
+   dit uit vijf varianten; het eerste, retro ontwerp is ermee vervangen.
 
 **Keuzes die afwijken van het voorstel in de opdracht**
 
 - Geen Media3 Transformer, WorkManager of DataStore: die brengen netwerkpermissies of
   libraries van derden mee. Zie de tabel "Keuzes" in de README.
+- De vormgeving volgt niet de retrostijl uit de opdracht, maar het ontwerp dat de eigenaar
+  daarna in Claude Design heeft gekozen. Dat heeft volgens de opdracht voorrang.
 - De schuifregelaar heet in de app "zichtbaarheid van de vorige foto": 0% is weg, 100% is
   volledig dekkend. In `project.json` heet de waarde `overlayZichtbaarheid`.
 - Een 16:9-project fotografeer je met de telefoon op zijn kant.

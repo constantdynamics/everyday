@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.FolderState
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
-import nl.constantdynamics.dagelijks.ui.components.RetroBackground
+import nl.constantdynamics.dagelijks.ui.components.AppBackground
 import nl.constantdynamics.dagelijks.ui.screens.AboutScreen
 import nl.constantdynamics.dagelijks.ui.screens.CameraScreen
 import nl.constantdynamics.dagelijks.ui.screens.GalleryScreen
@@ -132,7 +132,7 @@ private fun rememberNavigator(): Navigator {
 fun DagelijksRoot(folderState: StateFlow<FolderState>) {
     val folder by folderState.collectAsStateWithLifecycle()
     when (val state = folder) {
-        FolderState.Loading -> RetroBackground(Modifier.fillMaxSize()) {}
+        FolderState.Loading -> AppBackground(Modifier.fillMaxSize()) {}
         FolderState.Missing -> WelcomeScreen()
         is FolderState.Ready -> MainNavigation(state.repository, state.location)
     }
@@ -247,7 +247,7 @@ private fun WithProject(
     val project = projects?.firstOrNull { it.folderName == folderName }
     when {
         project != null -> content(project)
-        projects == null -> RetroBackground(Modifier.fillMaxSize()) {}
+        projects == null -> AppBackground(Modifier.fillMaxSize()) {}
         else -> LaunchedEffect(folderName) { navigator.closeProject(folderName) }
     }
 }

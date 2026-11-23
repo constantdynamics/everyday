@@ -25,37 +25,37 @@ class RootResolverTest {
     private fun resolve(picked: File): File = File(RootResolver.resolve(LocalFileTree(picked)))
 
     @Test
-    fun `picking Documents makes a Dagelijks folder inside it`() {
+    fun `picking Documents makes a Everyday folder inside it`() {
         val documents = temporary.newFolder("Documents")
         File(documents, "brief.pdf").writeText("x")
 
         val root = resolve(documents)
 
-        assertEquals(File(documents, "Dagelijks"), root)
+        assertEquals(File(documents, "Everyday"), root)
         assertTrue(root.isDirectory)
     }
 
     @Test
     fun `an empty standard folder is not used as the main folder either`() {
         val documents = temporary.newFolder("Documents")
-        assertEquals(File(documents, "Dagelijks"), resolve(documents))
+        assertEquals(File(documents, "Everyday"), resolve(documents))
     }
 
     @Test
-    fun `picking a folder named Dagelijks uses that folder itself`() {
-        val picked = temporary.newFolder("Documents", "Dagelijks")
+    fun `picking a folder named Everyday uses that folder itself`() {
+        val picked = temporary.newFolder("Documents", "Everyday")
         assertEquals(picked, resolve(picked))
         assertEquals(emptyList<String>(), picked.list()!!.toList())
     }
 
     @Test
     fun `the name is recognised regardless of capitals`() {
-        val picked = temporary.newFolder("dagelijks")
+        val picked = temporary.newFolder("everyday")
         assertEquals(picked, resolve(picked))
     }
 
     @Test
-    fun `after a reinstall, picking Documents again finds the existing Dagelijks folder`() {
+    fun `after a reinstall, picking Documents again finds the existing Everyday folder`() {
         val documents = temporary.newFolder("Documents")
         val first = resolve(documents)
         File(first, "Mijn gezicht").mkdirs()
@@ -63,7 +63,7 @@ class RootResolverTest {
         val second = resolve(documents)
 
         assertEquals(first, second)
-        assertEquals(listOf("Dagelijks"), documents.list()!!.toList())
+        assertEquals(listOf("Everyday"), documents.list()!!.toList())
     }
 
     @Test
@@ -74,7 +74,7 @@ class RootResolverTest {
             .createProject("Tuin", Lens.BACK, AspectRatio.SQUARE)
 
         assertEquals(renamed, resolve(renamed))
-        assertFalse(File(renamed, "Dagelijks").exists())
+        assertFalse(File(renamed, "Everyday").exists())
     }
 
     @Test
@@ -83,12 +83,12 @@ class RootResolverTest {
         File(documents, "website").mkdirs()
         File(documents, "website/project.json").writeText("""{"name":"my site","version":"1.0"}""")
 
-        assertEquals(File(documents, "Dagelijks"), resolve(documents))
+        assertEquals(File(documents, "Everyday"), resolve(documents))
     }
 
     @Test
     fun `the main folder gets exactly one nomedia file`() {
-        val picked = temporary.newFolder("Dagelijks")
+        val picked = temporary.newFolder("Everyday")
         val tree = LocalFileTree(picked)
         val rootId = RootResolver.resolve(tree)
 

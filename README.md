@@ -58,10 +58,10 @@ alleen door de app zelf worden gebruikt.
 ## Waar je foto's staan
 
 Bij de eerste start kies je een map op je telefoon, bijvoorbeeld `Documenten`. De app maakt
-daarin de map `Dagelijks`:
+daarin de map `Everyday`:
 
 ```
-Dagelijks/
+Everyday/
   .nomedia
   Mijn gezicht/
     project.json          instellingen: camera, beeldverhouding, overlay, snelheid
@@ -93,10 +93,10 @@ Je hebt Android Studio nodig (voor de JDK en de Android SDK). Daarna:
 Op Windows doet `installeer-op-telefoon.bat` hetzelfde met een dubbelklik.
 
 **Ondertekening.** De eerste build maakt een vaste sleutel aan in
-`<thuismap>/Dagelijks-sleutel` (`dagelijks-sleutel.p12` en `sleutel.properties`). Debug en
+`<thuismap>/Everyday-sleutel` (`everyday-sleutel.p12` en `sleutel.properties`). Debug en
 release gebruiken allebei die sleutel, zodat elke nieuwe versie over de vorige heen kan.
 De sleutel en het wachtwoord staan buiten deze repository. Maak er een reservekopie van.
-Een andere plek kan met de Gradle-eigenschap `dagelijks.sleutelmap`.
+Een andere plek kan met de Gradle-eigenschap `everyday.sleutelmap`.
 
 Versies: minSdk 26 (Android 8), targetSdk 37, AGP 9.5, Kotlin 2.4, Compose BOM 2026.11, CameraX 1.7.
 
@@ -126,13 +126,13 @@ De workflow in `.github/workflows/bouw.yml` draait dit alles bij elke push.
 | `SharedPreferences` in plaats van DataStore | DataStore brengt Okio mee. De app onthoudt alleen welke map je koos. |
 | Eigen afbeeldingslader in plaats van Coil of Glide | Die vragen allebei `INTERNET` aan. |
 | Eigen navigatie in plaats van een navigatielibrary | Acht schermen; een lijstje volstaat. |
-| Altijd een eigen map `Dagelijks` | Android negeert en verwijdert `.nomedia` in standaardmappen zoals Documenten. |
+| Altijd een eigen map `Everyday` | Android negeert en verwijdert `.nomedia` in standaardmappen zoals Documenten. |
 | Foto opnieuw coderen, rechtop | Zo toont elk programma hem goed, ook als het EXIF negeert, en kan er geen metadata van de camera meekomen. |
 | 16:9 fotografeer je met de telefoon op zijn kant | Zo wordt de volle breedte van de sensor gebruikt. Welke kant boven ligt, maakt niet uit. |
 | Vaste sleutel voor debug én release, zelfde app-id | Elke build kan over elke andere heen. |
 
 ## Licenties
 
-De app bundelt drie lettertypen onder de SIL Open Font License 1.1: Shrikhand, Pacifico en
-Work Sans. De licentieteksten staan in [`licenties/`](licenties). De pictogrammen zijn
-Material Design icons (Apache-licentie 2.0).
+De app bundelt twee lettertypen onder de SIL Open Font License 1.1: Unbounded voor titels en
+Outfit voor alle overige tekst. De licentieteksten staan in [`licenties/`](licenties). De
+pictogrammen zijn voor deze app getekend.

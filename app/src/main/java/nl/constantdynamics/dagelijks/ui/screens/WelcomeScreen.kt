@@ -35,17 +35,19 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.storage.StorageAccess
 import nl.constantdynamics.dagelijks.ui.LocalServices
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
-import nl.constantdynamics.dagelijks.ui.components.RetroBackground
-import nl.constantdynamics.dagelijks.ui.components.RetroButton
-import nl.constantdynamics.dagelijks.ui.components.RetroCard
-import nl.constantdynamics.dagelijks.ui.components.RetroTitle
-import nl.constantdynamics.dagelijks.ui.components.Ribbon
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.AppButton
+import nl.constantdynamics.dagelijks.ui.components.AppCard
+import nl.constantdynamics.dagelijks.ui.components.DisplayTitle
+import nl.constantdynamics.dagelijks.ui.components.NoticeCard
+import nl.constantdynamics.dagelijks.ui.components.SectionLabel
+import nl.constantdynamics.dagelijks.ui.components.TitleRule
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
+import nl.constantdynamics.dagelijks.ui.theme.AppType
 
 /**
  * The system folder picker, limited to the phone's own storage: cloud drives are
@@ -90,47 +92,47 @@ fun WelcomeScreen() {
         }
     }
 
-    RetroBackground(Modifier.fillMaxSize()) {
+    AppBackground(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 22.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            Spacer(Modifier.height(16.dp))
-            Ribbon("elke dag een foto")
-            Spacer(Modifier.height(10.dp))
-            RetroTitle("Everyday", fontSize = 60.sp, depth = 7.dp, outlineWidth = 2.5.dp)
-            Spacer(Modifier.height(22.dp))
+            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                Spacer(Modifier.height(14.dp))
+                SectionLabel("elke dag een foto", color = AppColors.TextMuted, style = AppType.tagline)
+                Spacer(Modifier.height(18.dp))
+                DisplayTitle("Everyday", style = AppType.appTitle, color = AppColors.Amber)
+                Spacer(Modifier.height(24.dp))
+                TitleRule()
+            }
+            Spacer(Modifier.height(26.dp))
 
-            RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
+            AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(
-                        "Waar mogen je foto's staan?",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = RetroColors.Navy,
-                    )
+                    Text("Waar mogen je foto's staan?", style = MaterialTheme.typography.titleLarge)
                     Text(
                         "Je foto's komen als gewone bestanden in een map op je telefoon. " +
                             "Zo kun je ze met een usb-kabel naar je computer kopiëren, en blijven ze bewaard " +
                             "als je de app ooit verwijdert.",
                         style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.TextMuted,
                     )
                     Step(1, "Tik hieronder op “Kies een map”.")
-                    Step(2, "Maak een nieuwe map met de naam Dagelijks en open die. Of kies gewoon Documenten; dan maakt de app de map Dagelijks zelf aan.")
+                    Step(2, "Maak een nieuwe map met de naam Everyday en open die. Of kies gewoon Documenten; dan maakt de app de map Everyday zelf aan.")
                     Step(3, "Tik op “Deze map gebruiken” en daarna op “Toestaan”.")
                     Text(
                         "Had je de app al eerder? Kies dan dezelfde map als toen: al je projecten en foto's komen vanzelf terug.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = RetroColors.Navy.copy(alpha = 0.8f),
+                        color = AppColors.TextMuted,
                     )
                 }
             }
 
             Spacer(Modifier.height(20.dp))
-            RetroButton(
+            AppButton(
                 text = if (busy) "Even geduld…" else "Kies een map",
                 onClick = {
                     // A phone without the system folder picker is rare, but it must not crash the app.
@@ -144,7 +146,7 @@ fun WelcomeScreen() {
 
             problem?.let {
                 Spacer(Modifier.height(16.dp))
-                RetroCard(Modifier.fillMaxWidth(), fill = RetroColors.Mustard) {
+                NoticeCard(Modifier.fillMaxWidth()) {
                     Text(it, style = MaterialTheme.typography.bodyLarge)
                 }
             }
@@ -153,9 +155,9 @@ fun WelcomeScreen() {
             Text(
                 "Deze app heeft geen toegang tot internet. Je foto's verlaten je telefoon alleen als jij ze zelf kopieert.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = RetroColors.Navy,
+                color = AppColors.TextMuted,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             )
             Spacer(Modifier.height(16.dp))
         }
@@ -167,18 +169,15 @@ private fun Step(number: Int, text: String) {
     Row(verticalAlignment = Alignment.Top) {
         Text(
             text = number.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            color = RetroColors.Cream,
+            style = MaterialTheme.typography.titleSmall,
+            color = AppColors.Amber,
             textAlign = TextAlign.Center,
             modifier = Modifier
-                .size(30.dp)
-                .drawBehind {
-                    drawCircle(RetroColors.Coral)
-                    drawCircle(RetroColors.Navy, radius = size.minDimension / 2 - 1.dp.toPx(), style = Stroke(2.dp.toPx()))
-                }
-                .padding(top = 3.dp),
+                .size(28.dp)
+                .drawBehind { drawCircle(AppColors.Amber, radius = size.minDimension / 2 - 0.5.dp.toPx(), style = Stroke(1.dp.toPx())) }
+                .padding(top = 4.dp),
         )
         Spacer(Modifier.width(12.dp))
-        Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(top = 3.dp))
+        Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(top = 2.dp))
     }
 }

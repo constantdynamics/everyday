@@ -20,14 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import nl.constantdynamics.dagelijks.storage.Photo
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.LocalServices
-import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+import nl.constantdynamics.dagelijks.ui.theme.AppColors
 import java.time.LocalDate
 
 /**
@@ -67,7 +65,7 @@ fun PhotoImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     contentDescription: String? = null,
-    placeholder: Color = RetroColors.CreamDark,
+    placeholder: Color = AppColors.Raised,
 ) {
     val bitmap = rememberPhotoBitmap(repository, photo, maxSide)
     if (bitmap != null) {
@@ -82,19 +80,18 @@ fun PhotoImage(
     }
 }
 
-/** Top of a screen: back button, a title in display letters, and optional actions. */
+/** Top of a screen: back button, the title in display letters, and optional actions. */
 @Composable
 fun ScreenHeader(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    fontSize: TextUnit = 34.sp,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        RetroIconButton(AppIcons.Back, description = "Terug", onClick = onBack)
-        Spacer(Modifier.width(12.dp))
-        RetroTitle(text = title, fontSize = fontSize, modifier = Modifier.weight(1f))
+        AppIconButton(AppIcons.Back, description = "Terug", onClick = onBack)
+        Spacer(Modifier.width(14.dp))
+        DisplayTitle(text = title, maxLines = 2, modifier = Modifier.weight(1f))
         actions()
     }
 }
