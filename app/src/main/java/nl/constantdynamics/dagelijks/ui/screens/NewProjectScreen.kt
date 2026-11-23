@@ -1,0 +1,200 @@
+package nl.constantdynamics.dagelijks.ui.screens
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import nl.constantdynamics.dagelijks.core.AspectRatio
+import nl.constantdynamics.dagelijks.core.Lens
+import nl.constantdynamics.dagelijks.storage.Project
+import nl.constantdynamics.dagelijks.storage.ProjectRepository
+import nl.constantdynamics.dagelijks.ui.components.AppIcons
+import nl.constantdynamics.dagelijks.ui.components.ChoiceTile
+import nl.constantdynamics.dagelijks.ui.components.RetroBackground
+import nl.constantdynamics.dagelijks.ui.components.RetroButton
+import nl.constantdynamics.dagelijks.ui.components.RetroCard
+import nl.constantdynamics.dagelijks.ui.components.RetroTextField
+import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
+import nl.constantdynamics.dagelijks.ui.theme.RetroColors
+
+@Composable
+fun NewProjectScreen(
+    repository: ProjectRepository,
+    onCreated: (Project) -> Unit,
+    onBack: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val nameField = rememberTextFieldState()
+    val name = nameField.text.toString()
+    var lens by rememberSaveable { mutableStateOf(Lens.FRONT) }
+    var aspectRatio by rememberSaveable { mutableStateOf(AspectRatio.DEFAULT) }
+    var busy by rememberSaveable { mutableStateOf(false) }
+    var failed by rememberSaveable { mutableStateOf(false) }
+
+    fun create() {
+        if (busy || name.isBlank()) return
+        busy = true
+        failed = false
+        scope.launch {
+            val created = runCatching { repository.createProject(name, lens, aspectRatio) }
+            busy = false
+            created.onSuccess(onCreated).onFailure { failed = true }
+        }
+    }
+
+    RetroBackground(Modifier.fillMaxSize(), sunburst = false) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            ScreenHeader(title = "Nieuw project", onBack = onBack)
+
+            RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Hoe heet je project?", style = MaterialTheme.typography.titleLarge)
+                    RetroTextField(
+                        state = nameField,
+                        placeholder = "Bijvoorbeeld: Mijn gezicht",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Welke camera?", style = MaterialTheme.typography.titleLarge)
+                    LensChoice(lens, onChange = { lens = it })
+                }
+            }
+
+            RetroCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Welke vorm krijgt de foto?", style = MaterialTheme.typography.titleLarge)
+                    AspectRatioChoice(aspectRatio, onChange = { aspectRatio = it })
+                    Text(
+                        "Na je eerste foto ligt de vorm vast. Alleen dan blijft de vorige foto precies over de nieuwe passen.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = RetroColors.Navy.copy(alpha = 0.8f),
+                    )
+                }
+            }
+
+            if (failed) {
+                RetroCard(Modifier.fillMaxWidth(), fill = RetroColors.Mustard) {
+                    Text(
+                        "Het project kon niet worden aangemaakt. Controleer of er nog ruimte is op je telefoon en probeer het opnieuw.",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+            }
+
+            RetroButton(
+                text = if (busy) "Even geduld…" else "Maak project",
+                onClick = ::create,
+                icon = AppIcons.Check,
+                enabled = name.isNotBlank() && !busy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+/** Front or back camera. */
+@Composable
+fun LensChoice(selected: Lens, onChange: (Lens) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        ChoiceTile(selected == Lens.FRONT, onClick = { onChange(Lens.FRONT) }, modifier = Modifier.weight(1f)) {
+            Text("Voorkant", style = MaterialTheme.typography.titleMedium)
+            Text("selfie", style = MaterialTheme.typography.bodySmall)
+        }
+        ChoiceTile(selected == Lens.BACK, onClick = { onChange(Lens.BACK) }, modifier = Modifier.weight(1f)) {
+            Text("Achterkant", style = MaterialTheme.typography.titleMedium)
+            Text("gewone camera", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/** The four shapes, each drawn in its real proportions. */
+@Composable
+fun AspectRatioChoice(
+    selected: AspectRatio,
+    onChange: (AspectRatio) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        AspectRatio.entries.forEach { ratio ->
+            ChoiceTile(
+                selected = selected == ratio,
+                onClick = { onChange(ratio) },
+                enabled = enabled || selected == ratio,
+                modifier = Modifier.weight(1f),
+            ) {
+                Box(Modifier.size(46.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.fillMaxSize().drawBehind {
+                            // Fit the shape into the square, like a little picture frame.
+                            val scale = minOf(size.width / ratio.width, size.height / ratio.height)
+                            val shape = Size(ratio.width * scale, ratio.height * scale)
+                            val origin = Offset((size.width - shape.width) / 2, (size.height - shape.height) / 2)
+                            val radius = CornerRadius(3.dp.toPx())
+                            drawRoundRect(RetroColors.Coral, origin, shape, radius)
+                            drawRoundRect(RetroColors.Navy, origin, shape, radius, style = Stroke(2.dp.toPx()))
+                        },
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(ratio.id, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
+                Text(
+                    text = when (ratio) {
+                        AspectRatio.PORTRAIT_9_16 -> "hoog"
+                        AspectRatio.PORTRAIT_3_4 -> "staand"
+                        AspectRatio.SQUARE -> "vierkant"
+                        AspectRatio.LANDSCAPE_16_9 -> "liggend"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
