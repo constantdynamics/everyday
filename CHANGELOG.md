@@ -73,6 +73,10 @@ nog uitkwam, is meegenomen:
   vaststaat dat de ondertekensleutel de oorzaak is, en niet meer na elke mislukte poging.
 - De halve grootte bij te weinig geheugen werkt nu ook als Android de foto simpelweg niet
   kan openen in plaats van een geheugenfout te melden.
+- Een tekst die niet past, krijgt in één keer de juiste kleinere maat in plaats van in een
+  paar stapjes te krimpen.
+- Een scherm dat je sluit terwijl het nog aan het vervagen is, blijft onthouden wat het
+  toonde zolang het nog zichtbaar is.
 
 **De automatische tests**
 
