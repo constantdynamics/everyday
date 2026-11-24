@@ -59,7 +59,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,6 +93,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -124,12 +127,9 @@ import nl.constantdynamics.dagelijks.ui.components.KeepScreenOn
 import nl.constantdynamics.dagelijks.ui.components.Pill
 import nl.constantdynamics.dagelijks.ui.components.PillTone
 import nl.constantdynamics.dagelijks.ui.components.rememberPhotoBitmap
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.components.rememberToday
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
-import java.io.File
-import java.time.LocalDate
-import java.time.LocalDateTime
-import kotlin.math.roundToInt
 
 /** Test tags, so automated tests can find the important parts of the camera screen. */
 object CameraTags {
@@ -179,7 +179,7 @@ fun CameraScreen(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
+    val scope = rememberScreenScope()
 
     val settings = project.settings
     val aspectRatio = settings.aspectRatio
@@ -261,15 +261,18 @@ fun CameraScreen(
         cameraReady = false
         boundRotation = null
         if (!hasPermission) return@LaunchedEffect
-        val rotation = awaitDisplayRotation(view, wantsLandscape)
-        try {
-            flashKind = session.bind(lifecycleOwner, previewView, activity?.window, lens, aspectRatio, rotation)
-            session.setFlash(flashOn)
-            boundRotation = rotation
-            cameraProblem = false
-            cameraReady = true
-        } catch (_: CameraUnavailableException) {
-            cameraProblem = true
+        // Starting the camera waits for other threads; what follows belongs to the main one.
+        withContext(Dispatchers.Main.immediate) {
+            val rotation = awaitDisplayRotation(view, wantsLandscape)
+            try {
+                flashKind = session.bind(lifecycleOwner, previewView, activity?.window, lens, aspectRatio, rotation)
+                session.setFlash(flashOn)
+                boundRotation = rotation
+                cameraProblem = false
+                cameraReady = true
+            } catch (_: CameraUnavailableException) {
+                cameraProblem = true
+            }
         }
     }
     LaunchedEffect(flashOn, cameraReady) {

@@ -1,5 +1,6 @@
 package nl.constantdynamics.dagelijks.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,15 +41,16 @@ import nl.constantdynamics.dagelijks.core.AspectRatio
 import nl.constantdynamics.dagelijks.core.Lens
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
-import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.AppBackground
 import nl.constantdynamics.dagelijks.ui.components.AppButton
 import nl.constantdynamics.dagelijks.ui.components.AppCard
+import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.AppTextField
 import nl.constantdynamics.dagelijks.ui.components.ChoiceTile
 import nl.constantdynamics.dagelijks.ui.components.FittedText
 import nl.constantdynamics.dagelijks.ui.components.NoticeCard
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
 
 @Composable
@@ -59,7 +59,7 @@ fun NewProjectScreen(
     onCreated: (Project) -> Unit,
     onBack: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
+    val scope = rememberScreenScope()
     val nameField = rememberTextFieldState()
     val name = nameField.text.toString()
     var lens by rememberSaveable { mutableStateOf(Lens.FRONT) }

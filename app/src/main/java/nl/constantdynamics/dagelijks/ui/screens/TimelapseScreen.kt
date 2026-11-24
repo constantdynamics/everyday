@@ -44,6 +44,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.core.Days
 import nl.constantdynamics.dagelijks.core.DutchText
@@ -70,10 +75,6 @@ import nl.constantdynamics.dagelijks.ui.components.NoticeCard
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
 import nl.constantdynamics.dagelijks.ui.components.SectionLabel
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import kotlin.math.roundToInt
 
 object TimelapseTags {
     const val START = "maak-timelapse"
@@ -95,7 +96,7 @@ fun TimelapseScreen(
 ) {
     val services = LocalServices.current
     val renderer = services.timelapseRenderer
-    val renderState by renderer.state.collectAsStateWithLifecycle()
+    val renderState by renderer.state.collectAsStateWithLifecycle(context = Dispatchers.Main.immediate)
 
     var speed by rememberSaveable { mutableIntStateOf(project.settings.timelapseFps) }
     var showDate by rememberSaveable { mutableStateOf(false) }

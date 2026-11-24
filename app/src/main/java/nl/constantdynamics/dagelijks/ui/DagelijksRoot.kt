@@ -12,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,12 +20,15 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.FolderState
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.screens.AboutScreen
 import nl.constantdynamics.dagelijks.ui.screens.CameraScreen
 import nl.constantdynamics.dagelijks.ui.screens.GalleryScreen
@@ -36,7 +38,6 @@ import nl.constantdynamics.dagelijks.ui.screens.PlayerScreen
 import nl.constantdynamics.dagelijks.ui.screens.TimelapseScreen
 import nl.constantdynamics.dagelijks.ui.screens.ViewerScreen
 import nl.constantdynamics.dagelijks.ui.screens.WelcomeScreen
-import java.time.LocalDate
 
 /** The screens of the app. Projects are referred to by their folder name. */
 sealed interface Screen {
@@ -148,7 +149,7 @@ private fun rememberNavigator(stateHolder: SaveableStateHolder): Navigator {
 
 @Composable
 fun DagelijksRoot(folderState: StateFlow<FolderState>) {
-    val folder by folderState.collectAsStateWithLifecycle()
+    val folder by folderState.collectAsStateWithLifecycle(context = Dispatchers.Main.immediate)
     when (val state = folder) {
         FolderState.Loading -> AppBackground(Modifier.fillMaxSize()) {}
         FolderState.Missing -> WelcomeScreen()
@@ -160,8 +161,8 @@ fun DagelijksRoot(folderState: StateFlow<FolderState>) {
 private fun MainNavigation(repository: ProjectRepository, location: String) {
     val stateHolder = rememberSaveableStateHolder()
     val navigator = rememberNavigator(stateHolder)
-    val scope = rememberCoroutineScope()
-    val projects by repository.projects.collectAsStateWithLifecycle()
+    val scope = rememberScreenScope()
+    val projects by repository.projects.collectAsStateWithLifecycle(context = Dispatchers.Main.immediate)
 
     // Photos may have been added or removed from a computer while the app was away.
     // If the whole folder turns out to be gone, the app asks for it again.
