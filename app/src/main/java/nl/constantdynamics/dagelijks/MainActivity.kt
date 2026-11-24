@@ -24,9 +24,11 @@ class MainActivity : ComponentActivity() {
     /** The whole interface is Dutch, whatever language the phone is set to. */
     @SuppressLint("AppBundleLocaleChanges") // installed as a plain APK, never split by language
     override fun attachBaseContext(newBase: Context) {
-        val configuration = Configuration(newBase.resources.configuration)
-        configuration.setLocale(DagelijksApp.DUTCH)
-        super.attachBaseContext(newBase.createConfigurationContext(configuration))
+        // Only the language is laid down here. Everything else (how the phone is held,
+        // the font size, the screen size) keeps following the phone; a full copy of the
+        // configuration would freeze all of that at the moment the app was opened.
+        val dutchOnly = Configuration().apply { setLocale(DagelijksApp.DUTCH) }
+        super.attachBaseContext(newBase.createConfigurationContext(dutchOnly))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

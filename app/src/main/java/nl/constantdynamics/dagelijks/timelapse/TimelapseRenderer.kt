@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.constantdynamics.dagelijks.WorkFiles
 import nl.constantdynamics.dagelijks.core.AspectRatio
 import nl.constantdynamics.dagelijks.core.PhotoNames
 import nl.constantdynamics.dagelijks.core.PixelSize
@@ -53,6 +54,7 @@ sealed interface RenderState {
         val size: PixelSize,
     ) : RenderState
 
+    /** [reason] is a Dutch sentence for the user, or null when there is nothing more to say. */
     data class Failed(val projectFolderName: String, val reason: String?) : RenderState
 }
 
@@ -63,7 +65,8 @@ sealed interface RenderState {
  * screen, so the interface stays responsive and walking around in the app does not
  * interrupt it. The video is first written to the app's private cache and only
  * copied into the project folder when it is complete: an interrupted render leaves
- * nothing behind.
+ * nothing behind there. (What stays in the cache when the app is stopped altogether
+ * is removed the next time the app starts, see [WorkFiles].)
  */
 class TimelapseRenderer(
     private val context: Context,
@@ -87,7 +90,9 @@ class TimelapseRenderer(
                 mutableState.value = RenderState.Idle
                 throw cancelled
             } catch (failure: Exception) {
-                mutableState.value = RenderState.Failed(request.projectFolderName, failure.message)
+                // Only a reason written for the user is passed on; the message of any other
+                // failure is English and meant for a programmer.
+                mutableState.value = RenderState.Failed(request.projectFolderName, (failure as? RenderProblem)?.message)
             }
         }
     }
@@ -102,8 +107,8 @@ class TimelapseRenderer(
     }
 
     private suspend fun render(request: TimelapseRequest, repository: ProjectRepository): RenderState {
-        if (request.photos.isEmpty()) throw IOException("Er zijn geen foto's in deze periode")
-        val workFile = File(File(context.cacheDir, "timelapse").apply { mkdirs() }, "bezig.mp4")
+        if (request.photos.isEmpty()) throw RenderProblem("Er zijn geen foto's in deze periode")
+        val workFile = File(WorkFiles.timelapseFolder(context.cacheDir), "bezig.mp4")
         val thread = Executors.newSingleThreadExecutor { Thread(it, "timelapse") }.asCoroutineDispatcher()
         try {
             // 1080 pixels on the short side; a phone whose encoder cannot do that gets 720.
@@ -119,7 +124,7 @@ class TimelapseRenderer(
                     lastFailure = failure
                 }
             }
-            val result = outcome ?: throw IOException("Je telefoon kon de video niet coderen", lastFailure)
+            val result = outcome ?: throw RenderProblem("Je telefoon kon de video niet coderen", lastFailure)
 
             mutableState.value = RenderState.Running(request.projectFolderName, request.photos.size, request.photos.size, saving = true)
             val fileName = PhotoNames.timelapseFileName(
@@ -136,6 +141,9 @@ class TimelapseRenderer(
     }
 
     private class Outcome(val used: Int, val skipped: Int, val size: PixelSize)
+
+    /** A failure whose message is Dutch and written for the user, so it can be shown as it is. */
+    private class RenderProblem(message: String, cause: Throwable? = null) : IOException(message, cause)
 
     /** The encoder refused this frame size before a single picture was written. */
     private class EncoderUnavailableException(cause: Exception) : Exception(cause)
@@ -162,7 +170,7 @@ class TimelapseRenderer(
             throw EncoderUnavailableException(failure)
         }
         val composer = FrameComposer(context, size.width, size.height, request.showDate)
-        try {
+        val outcome = try {
             var frame = 0
             var used = 0
             var skipped = 0
@@ -186,13 +194,17 @@ class TimelapseRenderer(
                 }
                 mutableState.value = RenderState.Running(request.projectFolderName, index + 1, request.photos.size)
             }
-            if (used == 0) throw IOException("Geen enkele foto kon worden gelezen")
+            if (used == 0) throw RenderProblem("Geen enkele foto kon worden gelezen")
             encoder.finish()
-            return Outcome(used, skipped, size)
+            Outcome(used, skipped, size)
         } finally {
             encoder.close()
             composer.release()
         }
+        // Android's video writer notes the Android version, and on some phones the make
+        // and model, in the file. A photo carries nothing of the kind; neither does this.
+        Mp4Metadata.strip(target)
+        return outcome
     }
 
     private fun candidateSizes(aspectRatio: AspectRatio): List<PixelSize> {

@@ -17,10 +17,12 @@ import nl.constantdynamics.dagelijks.core.TimelapseMath
 import nl.constantdynamics.dagelijks.storage.LocalFileTree
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.timelapse.RenderState
+import nl.constantdynamics.dagelijks.timelapse.Mp4Metadata
 import nl.constantdynamics.dagelijks.timelapse.TimelapseRenderer
 import nl.constantdynamics.dagelijks.timelapse.TimelapseRequest
 import nl.constantdynamics.dagelijks.timelapse.VideoEncoder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +35,13 @@ class VideoEncoderDeviceTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val colours = listOf(Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.WHITE, Color.MAGENTA)
+
+    /** True when the text occurs anywhere in the file's bytes. */
+    private fun File.contains(text: String): Boolean {
+        val bytes = readBytes()
+        val wanted = text.toByteArray(Charsets.ISO_8859_1)
+        return (0..bytes.size - wanted.size).any { start -> wanted.indices.all { bytes[start + it] == wanted[it] } }
+    }
 
     @Test
     fun stillPicturesBecomeAPlayableH264Video() {
@@ -53,6 +62,15 @@ class VideoEncoderDeviceTest {
             }
             encoder.finish()
         }
+
+        // Android's video writer notes the Android version in the file (and on some phones
+        // the make and model). After stripping, nothing of that is left, and the video below
+        // is still as playable as before.
+        val wroteDeviceDetails = file.contains("com.android.")
+        val stripped = Mp4Metadata.strip(file)
+        Log.i("DagelijksTest", "the phone's video writer added device details: $wroteDeviceDetails; boxes wiped: $stripped")
+        assertEquals("a box is wiped exactly when the writer added details", wroteDeviceDetails, stripped > 0)
+        assertFalse("device details are still in the video", file.contains("com.android."))
 
         val video = DeviceFixtures.inspectVideo(file.path)
         assertEquals(1, video.tracks)
@@ -106,6 +124,9 @@ class VideoEncoderDeviceTest {
         val file = File(root, "Proef/timelapses/$expectedName")
         assertTrue("the video must be in the project's timelapses folder", file.isFile)
         assertEquals(listOf(expectedName), File(root, "Proef/timelapses").list()!!.toList())
+
+        // The stored video says nothing about the phone it was made on.
+        assertFalse("device details are in the stored timelapse", file.contains("com.android."))
 
         val video = DeviceFixtures.inspectVideo(file.path)
         Log.i("DagelijksTest", "timelapse rendered at ${video.width}x${video.height}, ${video.frames} frames, ${file.length()} bytes")

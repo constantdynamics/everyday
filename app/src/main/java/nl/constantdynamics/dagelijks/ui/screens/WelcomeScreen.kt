@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,14 +37,15 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.storage.StorageAccess
 import nl.constantdynamics.dagelijks.ui.LocalServices
-import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.AppBackground
 import nl.constantdynamics.dagelijks.ui.components.AppButton
 import nl.constantdynamics.dagelijks.ui.components.AppCard
+import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.DisplayTitle
 import nl.constantdynamics.dagelijks.ui.components.NoticeCard
 import nl.constantdynamics.dagelijks.ui.components.SectionLabel
 import nl.constantdynamics.dagelijks.ui.components.TitleRule
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
 import nl.constantdynamics.dagelijks.ui.theme.AppType
 
@@ -72,7 +72,7 @@ class PickLocalFolder : ActivityResultContracts.OpenDocumentTree() {
 @Composable
 fun WelcomeScreen() {
     val services = LocalServices.current
-    val scope = rememberCoroutineScope()
+    val scope = rememberScreenScope()
     var busy by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf<String?>(null) }
 

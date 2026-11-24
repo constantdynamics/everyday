@@ -155,7 +155,7 @@ private fun ProjectCard(
         contentPadding = PaddingValues(13.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            LatestPhoto(repository, project, Modifier.width(if (project.settings.aspectRatio.isLandscape) 104.dp else 78.dp))
+            LatestPhoto(repository, project, Modifier.width(if (project.settings.aspectRatio.isLandscape) 96.dp else 78.dp))
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(

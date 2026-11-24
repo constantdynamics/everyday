@@ -43,7 +43,7 @@ naar de datum van gisteren (bijvoorbeeld `2026-11-22.jpg`). Open de app daarna o
 - [ ] Schuif de regelaar van 0% (overlay weg) naar 100% (alleen de vorige foto).
 - [ ] Houd je vinger op het beeld: de overlay verdwijnt zolang je vasthoudt.
 - [ ] Zet de regelaar op 60%, sluit de camera en open hem opnieuw: hij staat weer op 60%.
-- [ ] Bij het andere project staat de regelaar nog op 35%.
+- [ ] Morgen, als ook **De boom in de tuin** een tweede foto krijgt en daar dus een overlay te zien is: de regelaar staat daar nog op 35%.
 
 ## Stap 5 – Galerij
 

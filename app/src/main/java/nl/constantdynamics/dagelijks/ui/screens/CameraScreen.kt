@@ -59,7 +59,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,12 +89,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.constantdynamics.dagelijks.WorkFiles
 import nl.constantdynamics.dagelijks.camera.CameraSession
 import nl.constantdynamics.dagelijks.camera.CameraUnavailableException
 import nl.constantdynamics.dagelijks.camera.FlashKind
@@ -116,14 +123,13 @@ import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.AppSlider
 import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.IconButtonKind
+import nl.constantdynamics.dagelijks.ui.components.KeepScreenOn
 import nl.constantdynamics.dagelijks.ui.components.Pill
 import nl.constantdynamics.dagelijks.ui.components.PillTone
 import nl.constantdynamics.dagelijks.ui.components.rememberPhotoBitmap
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
+import nl.constantdynamics.dagelijks.ui.components.rememberToday
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
-import java.io.File
-import java.time.LocalDate
-import java.time.LocalDateTime
-import kotlin.math.roundToInt
 
 /** Test tags, so automated tests can find the important parts of the camera screen. */
 object CameraTags {
@@ -173,7 +179,7 @@ fun CameraScreen(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
+    val scope = rememberScreenScope()
 
     val settings = project.settings
     val aspectRatio = settings.aspectRatio
@@ -203,6 +209,14 @@ fun CameraScreen(
     LaunchedEffect(Unit) {
         if (!hasPermission) permissionRequest.launch(Manifest.permission.CAMERA)
     }
+    // The permission can also be given in the phone's settings; notice that on the way back.
+    LifecycleResumeEffect(Unit) {
+        hasPermission =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        onPauseOrDispose {}
+    }
+    // Leaving the app ends the visit: the flash is off again the next time.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { flashOn = false }
 
     // --- Window behaviour while the camera is open ------------------------------------------
     val wantsLandscape = aspectRatio.isLandscape
@@ -216,10 +230,7 @@ fun CameraScreen(
         }
         onDispose { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
     }
-    DisposableEffect(view) {
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = false }
-    }
+    KeepScreenOn()
 
     fun close() {
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -250,15 +261,18 @@ fun CameraScreen(
         cameraReady = false
         boundRotation = null
         if (!hasPermission) return@LaunchedEffect
-        val rotation = awaitDisplayRotation(view, wantsLandscape)
-        try {
-            flashKind = session.bind(lifecycleOwner, previewView, activity?.window, lens, aspectRatio, rotation)
-            session.setFlash(flashOn)
-            boundRotation = rotation
-            cameraProblem = false
-            cameraReady = true
-        } catch (_: CameraUnavailableException) {
-            cameraProblem = true
+        // Starting the camera waits for other threads; what follows belongs to the main one.
+        withContext(Dispatchers.Main.immediate) {
+            val rotation = awaitDisplayRotation(view, wantsLandscape)
+            try {
+                flashKind = session.bind(lifecycleOwner, previewView, activity?.window, lens, aspectRatio, rotation)
+                session.setFlash(flashOn)
+                boundRotation = rotation
+                cameraProblem = false
+                cameraReady = true
+            } catch (_: CameraUnavailableException) {
+                cameraProblem = true
+            }
         }
     }
     LaunchedEffect(flashOn, cameraReady) {
@@ -266,8 +280,13 @@ fun CameraScreen(
     }
 
     // --- The previous photo as overlay ------------------------------------------------------
-    val today = remember { LocalDate.now() }
+    // Not fixed for the whole visit: the app may be left on this screen overnight.
+    val today = rememberToday()
     val targetDate = replaceDate ?: today
+    LaunchedEffect(today) {
+        // Yesterday's "saved" picture is no longer what this screen is about.
+        if (phase is Phase.Saved) phase = Phase.Aiming
+    }
     val overlayPhoto = remember(project.photos, targetDate) {
         Days.overlayDateFor(project.dates, targetDate)?.let(project::photoOn)
     }
@@ -312,8 +331,7 @@ fun CameraScreen(
                 val takenAt = LocalDateTime.now()
                 val date = replaceDate ?: takenAt.toLocalDate()
                 val pending = withContext(Dispatchers.Default) {
-                    val directory = File(context.cacheDir, "opname").apply { mkdirs() }
-                    val file = File(directory, "nieuw.jpg")
+                    val file = File(WorkFiles.captureFolder(context.cacheDir), "nieuw.jpg")
                     PhotoProcessor.process(raw.jpeg, raw.cropRect, raw.rotationDegrees, aspectRatio, takenAt, file)
                     PendingPhoto(file, ImageLoader.decodeScaled(file.readBytes(), 1600), date)
                 }
@@ -322,6 +340,9 @@ fun CameraScreen(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
+                phase = Phase.Failed(whileSaving = false)
+            } catch (_: OutOfMemoryError) {
+                // An enormous picture on a phone with little memory to spare: say so, do not crash.
                 phase = Phase.Failed(whileSaving = false)
             }
         }

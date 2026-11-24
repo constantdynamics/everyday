@@ -1,5 +1,6 @@
 package nl.constantdynamics.dagelijks.ui.screens
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,20 +30,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.storage.Photo
 import nl.constantdynamics.dagelijks.storage.Project
@@ -54,8 +54,8 @@ import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
 import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.PhotoImage
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
-import java.time.LocalDate
 
 /**
  * One photo, large. Swipe sideways to walk through the days; pinch to zoom in.
@@ -70,7 +70,7 @@ fun ViewerScreen(
     onBack: () -> Unit,
     onReplace: (LocalDate) -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
+    val scope = rememberScreenScope()
     val photos = project.photos
     if (photos.isEmpty()) {
         // The last photo was deleted.

@@ -54,6 +54,8 @@ class AppContainer(private val application: Application) {
     val folder: StateFlow<FolderState> = folderState.asStateFlow()
 
     init {
+        // Before any screen exists, so nothing of this can be in use yet.
+        runCatching { WorkFiles.clearLeftovers(application.cacheDir) }
         scope.launch {
             val opened = runCatching { storageAccess.openStored() }.getOrNull()
             // A test may already have put its own folder in place.

@@ -133,8 +133,9 @@ jobs:
 
   schermafbeeldingen:
     name: Schermafbeeldingen vastleggen
-    # Only on request: start the workflow by hand and tick the box.
-    if: always() && github.event_name == 'workflow_dispatch' && inputs.schermafbeeldingen
+    # Only on request: start the workflow by hand and tick the box. And only when both
+    # jobs before it succeeded, so pictures from a failed run never replace good ones.
+    if: github.event_name == 'workflow_dispatch' && inputs.schermafbeeldingen
     needs: [bouw, toestel]
     runs-on: ubuntu-latest
     permissions:

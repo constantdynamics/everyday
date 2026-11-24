@@ -12,7 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -20,12 +20,15 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.FolderState
 import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.components.AppBackground
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.screens.AboutScreen
 import nl.constantdynamics.dagelijks.ui.screens.CameraScreen
 import nl.constantdynamics.dagelijks.ui.screens.GalleryScreen
@@ -35,7 +38,6 @@ import nl.constantdynamics.dagelijks.ui.screens.PlayerScreen
 import nl.constantdynamics.dagelijks.ui.screens.TimelapseScreen
 import nl.constantdynamics.dagelijks.ui.screens.ViewerScreen
 import nl.constantdynamics.dagelijks.ui.screens.WelcomeScreen
-import java.time.LocalDate
 
 /** The screens of the app. Projects are referred to by their folder name. */
 sealed interface Screen {
@@ -82,8 +84,17 @@ sealed interface Screen {
     }
 }
 
-/** A plain back stack; with eight screens a navigation library would be overkill. */
-class Navigator(private val stack: SnapshotStateList<Screen>) {
+/**
+ * A plain back stack; with eight screens a navigation library would be overkill.
+ *
+ * [onLeft] is told about every screen that is no longer anywhere on the stack, so that
+ * what it remembered (the page the viewer was on, a half-filled form) can be thrown
+ * away. Opened again later, such a screen starts from scratch.
+ */
+class Navigator(
+    private val stack: MutableList<Screen>,
+    private val onLeft: (Screen) -> Unit = {},
+) {
     val current: Screen get() = stack.last()
     val canGoBack: Boolean get() = stack.size > 1
     val screens: List<Screen> get() = stack
@@ -93,18 +104,26 @@ class Navigator(private val stack: SnapshotStateList<Screen>) {
     }
 
     fun back() {
-        if (canGoBack) stack.removeAt(stack.lastIndex)
+        if (canGoBack) left(listOf(stack.removeAt(stack.lastIndex)))
     }
 
     /** Swaps the current screen for another, so going back skips it. */
     fun replace(screen: Screen) {
+        val previous = stack[stack.lastIndex]
         stack[stack.lastIndex] = screen
+        left(listOf(previous))
     }
 
     /** Leaves every screen that belongs to a project that no longer exists. */
     fun closeProject(project: String) {
-        stack.removeAll { it.belongsTo(project) }
+        val gone = stack.filter { it.belongsTo(project) }
+        stack.removeAll(gone)
         if (stack.isEmpty()) stack.add(Screen.Home)
+        left(gone)
+    }
+
+    private fun left(screens: List<Screen>) {
+        screens.distinct().filter { it !in stack }.forEach(onLeft)
     }
 
     private fun Screen.belongsTo(project: String): Boolean = when (this) {
@@ -118,19 +137,19 @@ class Navigator(private val stack: SnapshotStateList<Screen>) {
 }
 
 @Composable
-private fun rememberNavigator(): Navigator {
+private fun rememberNavigator(stateHolder: SaveableStateHolder): Navigator {
     val stack = rememberSaveable(
         saver = listSaver<SnapshotStateList<Screen>, String>(
             save = { list -> list.map { it.encode() } },
             restore = { saved -> mutableStateListOf<Screen>().apply { addAll(saved.map(Screen::decode)) } },
         ),
     ) { mutableStateListOf<Screen>(Screen.Home) }
-    return remember(stack) { Navigator(stack) }
+    return remember(stack, stateHolder) { Navigator(stack) { stateHolder.removeState(it.encode()) } }
 }
 
 @Composable
 fun DagelijksRoot(folderState: StateFlow<FolderState>) {
-    val folder by folderState.collectAsStateWithLifecycle()
+    val folder by folderState.collectAsStateWithLifecycle(context = Dispatchers.Main.immediate)
     when (val state = folder) {
         FolderState.Loading -> AppBackground(Modifier.fillMaxSize()) {}
         FolderState.Missing -> WelcomeScreen()
@@ -140,10 +159,10 @@ fun DagelijksRoot(folderState: StateFlow<FolderState>) {
 
 @Composable
 private fun MainNavigation(repository: ProjectRepository, location: String) {
-    val navigator = rememberNavigator()
     val stateHolder = rememberSaveableStateHolder()
-    val scope = rememberCoroutineScope()
-    val projects by repository.projects.collectAsStateWithLifecycle()
+    val navigator = rememberNavigator(stateHolder)
+    val scope = rememberScreenScope()
+    val projects by repository.projects.collectAsStateWithLifecycle(context = Dispatchers.Main.immediate)
 
     // Photos may have been added or removed from a computer while the app was away.
     // If the whole folder turns out to be gone, the app asks for it again.
@@ -176,7 +195,11 @@ private fun MainNavigation(repository: ProjectRepository, location: String) {
 
                     Screen.NewProject -> NewProjectScreen(
                         repository = repository,
-                        onCreated = { navigator.replace(Screen.Gallery(it.folderName)) },
+                        onCreated = {
+                            // Only when the form is still what the user is looking at; whoever
+                            // went back in the meantime finds the new project in the list.
+                            if (navigator.current == Screen.NewProject) navigator.replace(Screen.Gallery(it.folderName))
+                        },
                         onBack = navigator::back,
                     )
 

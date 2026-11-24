@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -35,7 +36,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
@@ -131,13 +131,13 @@ class CameraDeviceTest {
 
     @Test
     fun everyShapeAndBothCamerasGiveAnUprightPhotoOfTheRightShape() {
+        // Leaving the front camera out would look like a pass while half the test never ran.
+        assertTrue("the test phone must have a front camera (emulator option -camera-front emulated)", hasFrontCamera())
         val combinations = buildList {
             AspectRatio.entries.forEach { add(Lens.BACK to it) }
-            if (hasFrontCamera()) {
-                add(Lens.FRONT to AspectRatio.PORTRAIT_3_4)
-                add(Lens.FRONT to AspectRatio.PORTRAIT_9_16)
-                add(Lens.FRONT to AspectRatio.LANDSCAPE_16_9)
-            }
+            add(Lens.FRONT to AspectRatio.PORTRAIT_3_4)
+            add(Lens.FRONT to AspectRatio.PORTRAIT_9_16)
+            add(Lens.FRONT to AspectRatio.LANDSCAPE_16_9)
         }
         val pixels = mutableMapOf<Pair<Lens, AspectRatio>, Int>()
         combinations.forEachIndexed { index, (lens, ratio) ->
@@ -234,24 +234,42 @@ class CameraDeviceTest {
 
     @Test
     fun theFlashIsOffEveryTimeTheCameraOpens() {
-        createProject("Tuin", Lens.BACK, AspectRatio.PORTRAIT_3_4)
-        openCamera("Tuin")
-        assumeTrue(
-            "this camera has no flash to test",
-            compose.onAllNodesWithTag(CameraTags.FLASH).fetchSemanticsNodes().isNotEmpty(),
-        )
+        fun hasFlashButton() = compose.onAllNodesWithTag(CameraTags.FLASH).fetchSemanticsNodes().isNotEmpty()
         fun flashIs(state: String) =
             compose.onAllNodesWithContentDescription("Flitser staat $state", substring = true).fetchSemanticsNodes().isNotEmpty()
+
+        // An emulator's back camera has no flash, but its front camera flashes with the
+        // screen. Whichever has a flash button is used, so this test always really runs.
+        var project = "Tuin"
+        createProject(project, Lens.BACK, AspectRatio.PORTRAIT_3_4)
+        openCamera(project)
+        if (!hasFlashButton()) {
+            compose.onNodeWithContentDescription("Sluiten").performClick()
+            waitForText("Nieuw project")
+            project = "Gezicht"
+            createProject(project, Lens.FRONT, AspectRatio.PORTRAIT_3_4)
+            openCamera(project)
+        }
+        assertTrue("neither camera of this phone offers a flash, so there is nothing to test", hasFlashButton())
 
         assertTrue("the flash must start switched off", flashIs("uit"))
         compose.onNodeWithTag(CameraTags.FLASH).performClick()
         compose.waitUntil(5_000) { flashIs("aan") }
 
-        // Leave and come back: off again.
+        // Close the camera and come back: off again.
         compose.onNodeWithContentDescription("Sluiten").performClick()
         waitForText("Nieuw project")
-        openCamera("Tuin")
+        openCamera(project)
         assertTrue("switching the flash on must not be remembered", flashIs("uit"))
+
+        // Switch it on once more and leave the app without closing the camera, the way
+        // the home button does: also then it is off when the app is opened again.
+        compose.onNodeWithTag(CameraTags.FLASH).performClick()
+        compose.waitUntil(5_000) { flashIs("aan") }
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        waitForShutter()
+        compose.waitUntil(5_000) { flashIs("uit") }
     }
 
     // --- The overlay --------------------------------------------------------------------------
@@ -335,7 +353,8 @@ class CameraDeviceTest {
         val liveLatest = viewfinder()
 
         val part = stillestPartWithDetail(listOf(live, liveLater, liveLatest), ratio.id)
-        assumeTrue("${ratio.id}: the camera scene is moving everywhere; nothing to compare", part != null)
+        // Not something to skip quietly: without a comparison this test proves nothing.
+        assertNotNull("${ratio.id}: no still part with enough detail in the camera scene; nothing to compare", part)
         val liveImage = part!!.of(live)
         val overlay = part.of(previousPhoto)
 

@@ -49,7 +49,8 @@ De app praat met niets en niemand.
 | Niets naar de cloud | `allowBackup="false"`, plus `dataExtractionRules` en `fullBackupContent` die alles uitsluiten, ook bij het overzetten naar een nieuwe telefoon. |
 | Geen meekijkers | Geen analytics, crashrapportage, advertenties, accounts of Firebase. Geen WebView. Niets wordt tijdens gebruik gedownload; ook de emoji-font-download van AndroidX is uitgezet. |
 | Geen locatie in foto's | Elke foto wordt opnieuw gecodeerd. Alleen datum, tijd en "rechtop" komen in de EXIF. |
-| Niet in je galerij | De hoofdmap bevat een `.nomedia`-bestand, zodat de galerij en Google Foto's hem overslaan en er niets wordt gesynchroniseerd. |
+| Niets over je telefoon in video's | Android schrijft in elke MP4 zijn versienummer en bij sommige telefoons het merk en model. De app haalt dat er na het renderen weer uit (`Mp4Metadata`). |
+| Niet in je galerij | De hoofdmap en elke projectmap bevatten een `.nomedia`-bestand, zodat de galerij en Google Foto's ze overslaan en er niets wordt gesynchroniseerd. |
 
 De enige uitzondering op "alleen `CAMERA`" is een interne permissie die AndroidX zelf
 toevoegt (`…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`). Die geeft nergens toegang toe en kan
@@ -64,6 +65,7 @@ daarin de map `Everyday`:
 Everyday/
   .nomedia
   Mijn gezicht/
+    .nomedia
     project.json          instellingen: camera, beeldverhouding, overlay, snelheid
     2026-11-23.jpg
     2026-11-24.jpg
@@ -127,7 +129,11 @@ De workflow in `.github/workflows/bouw.yml` draait dit alles bij elke push.
 | Eigen afbeeldingslader in plaats van Coil of Glide | Die vragen allebei `INTERNET` aan. |
 | Eigen navigatie in plaats van een navigatielibrary | Acht schermen; een lijstje volstaat. |
 | Altijd een eigen map `Everyday` | Android negeert en verwijdert `.nomedia` in standaardmappen zoals Documenten. |
+| Ook `.nomedia` in elke projectmap | Dan blijven de foto's uit de galerij als iemand een projectmap los ergens anders neerzet. |
+| Eerst onder een tijdelijke naam schrijven | Een foto of video heet `.bezig-<grootte>-<naam>` tot hij helemaal is weggeschreven; pas dan verdwijnt de oude en krijgt de nieuwe zijn naam. Valt de app halverwege uit, dan is er dus altijd nog de oude of al de nieuwe, en maakt de app de laatste stap bij de volgende start af. |
+| Een onleesbare `project.json` wordt niet weggegooid | Hij wordt bewaard als `project-beschadigd.json` naast een nieuw bestand dat uit de foto's is afgeleid. |
 | Foto opnieuw coderen, rechtop | Zo toont elk programma hem goed, ook als het EXIF negeert, en kan er geen metadata van de camera meekomen. |
+| Timelapse op 720 pixels als 1080 niet lukt | De video is 1080 pixels aan de korte zijde. Weigert de videochip van een telefoon dat formaat, dan wordt het 720. Het venster na afloop noemt de werkelijke afmetingen. |
 | 16:9 fotografeer je met de telefoon op zijn kant | Zo wordt de volle breedte van de sensor gebruikt. Welke kant boven ligt, maakt niet uit. |
 | Vaste sleutel voor debug én release, zelfde app-id | Elke build kan over elke andere heen. |
 

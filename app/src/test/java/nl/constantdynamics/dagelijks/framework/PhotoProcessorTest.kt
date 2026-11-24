@@ -134,6 +134,20 @@ class PhotoProcessorTest {
 
     // --- Metadata -----------------------------------------------------------------------------
 
+    // --- Too little memory for the full picture -----------------------------------------------
+
+    @Test
+    fun `at half the size the photo is still upright, unmirrored and of the right shape`() {
+        for ((ratio, expected) in listOf(AspectRatio.PORTRAIT_3_4 to (150 to 200), AspectRatio.SQUARE to (150 to 150))) {
+            val target = temporary.newFile("half-${ratio.name}.jpg")
+            val processed = PhotoProcessor.process(sensorPicture, null, 90, ratio, takenAt, target, sampleSize = 2)
+            val photo = decode(target)
+            assertEquals("$ratio", expected, photo.width to photo.height)
+            assertEquals(expected, processed.width to processed.height)
+            assertEquals("$ratio", listOf("blauw", "rood", "geel", "groen"), Fixtures.corners(photo))
+        }
+    }
+
     @Test
     fun `the stored photo records when it was taken and that it stands upright`() {
         val exif = ExifInterface(process(rotation = 90, ratio = AspectRatio.PORTRAIT_3_4))

@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import java.time.YearMonth
 import kotlinx.coroutines.launch
 import nl.constantdynamics.dagelijks.core.Days
 import nl.constantdynamics.dagelijks.core.DutchText
@@ -62,9 +62,9 @@ import nl.constantdynamics.dagelijks.ui.components.PillTone
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
 import nl.constantdynamics.dagelijks.ui.components.SectionLabel
 import nl.constantdynamics.dagelijks.ui.components.panel
+import nl.constantdynamics.dagelijks.ui.components.rememberScreenScope
 import nl.constantdynamics.dagelijks.ui.components.rememberToday
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
-import java.time.YearMonth
 
 /** What the gallery grid shows: month headings with the photos of that month under them. */
 private sealed interface GalleryItem {
@@ -259,7 +259,7 @@ private fun ProjectSettingsDialog(
     onDeleted: () -> Unit,
 ) {
     val services = LocalServices.current
-    val scope = rememberCoroutineScope()
+    val scope = rememberScreenScope()
     val nameField = rememberTextFieldState(project.settings.name)
     var lens by rememberSaveable { mutableStateOf(project.settings.lens) }
     var aspectRatio by rememberSaveable { mutableStateOf(project.settings.aspectRatio) }

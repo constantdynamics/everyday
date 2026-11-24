@@ -10,6 +10,12 @@ echo   Everyday op je telefoon zetten
 echo   ==============================
 echo.
 
+rem --- 0. A new version unpacked over an old one leaves old files between the new ones,
+rem and then the build fails with errors nobody can make sense of. These files only
+rem existed in the first version.
+if exist "app\src\main\java\nl\constantdynamics\dagelijks\ui\components\RetroControls.kt" goto oude_bestanden
+if exist "app\src\main\java\nl\constantdynamics\dagelijks\ui\components\RetroText.kt" goto oude_bestanden
+
 rem --- 1. Java: Android Studio brings its own copy, and that is the one that fits ------
 rem A Java that happens to be installed for something else may be too old, so it is
 rem only used when Android Studio is not in one of its usual places.
@@ -29,17 +35,29 @@ goto mislukt
 
 :java_gevonden
 rem --- 2. The Android SDK that Android Studio installed ------------------------------
+rem ANDROID_HOME and ANDROID_SDK_ROOT only count when they really point at an SDK;
+rem otherwise the place where Android Studio puts it by default is used.
+set "SDK=%ANDROID_HOME%"
+if defined SDK if exist "%SDK%\platform-tools\adb.exe" goto sdk_gevonden
+set "SDK=%ANDROID_SDK_ROOT%"
+if defined SDK if exist "%SDK%\platform-tools\adb.exe" goto sdk_gevonden
 set "SDK=%LOCALAPPDATA%\Android\Sdk"
-if defined ANDROID_HOME set "SDK=%ANDROID_HOME%"
 if exist "%SDK%\platform-tools\adb.exe" goto sdk_gevonden
+rem Opening the project in Android Studio writes down where the SDK is; that is enough to build.
 if exist "local.properties" goto bouwen
-echo   De Android SDK is niet gevonden.
-echo   Start Android Studio een keer en doorloop de installatiewizard tot het einde
-echo   (HANDLEIDING.md, stap 1). Probeer het daarna opnieuw.
+echo   De Android SDK is niet gevonden op de gebruikelijke plek.
+echo.
+echo   Heb je Android Studio nog nooit gestart? Start het dan een keer en doorloop de
+echo   installatiewizard tot het einde (HANDLEIDING.md, stap 1).
+echo.
+echo   Heb je dat al gedaan? Dan staat de SDK op een andere plek. Start Android Studio,
+echo   kies Open, wijs deze map aan en wacht tot het laden onderin klaar is. Sluit
+echo   Android Studio daarna af en start dit bestand opnieuw.
 goto mislukt
 
 :sdk_gevonden
 set "ANDROID_HOME=%SDK%"
+set "ANDROID_SDK_ROOT=%SDK%"
 set "ADB=%SDK%\platform-tools\adb.exe"
 
 rem --- 3. Is a phone connected, and has it accepted this computer? -------------------
@@ -95,9 +113,14 @@ echo   De allereerste keer duurt dat lang (tien minuten of meer), daarna veel ko
 echo   Laat dit venster open en je telefoon aangesloten. Kijk af en toe op je telefoon:
 echo   vraagt die iets over installeren, kies dan Installeren of Toch installeren.
 echo.
+rem An app file from an earlier attempt is removed first. If there is one after a failed
+rem build, it was made just now, so the building went well and only the installing failed.
+set "APK=app\build\outputs\apk\release\app-release.apk"
+if exist "%APK%" del "%APK%"
 call gradlew.bat --no-daemon installRelease
 if errorlevel 1 goto bouwen_mislukt
 
+:gelukt
 if defined ADB "%ADB%" shell am start -n nl.constantdynamics.dagelijks/.MainActivity >nul 2>nul
 echo.
 echo   Klaar! Everyday staat op je telefoon.
@@ -111,11 +134,47 @@ exit /b 0
 :bouwen_mislukt
 echo.
 echo   Het is niet gelukt. Hierboven staat de foutmelding.
+if not defined ADB goto meer_oplossingen
+if not exist "%APK%" goto meer_oplossingen
+rem The app was built, so putting it on the phone is what failed. Doing that once more
+rem by hand shows the reason: a phone that holds an app signed with another key says so.
+"%ADB%" install -r "%APK%" > "%TEMP%\everyday-installatie.txt" 2>&1
+findstr /C:"Success" "%TEMP%\everyday-installatie.txt" >nul
+if not errorlevel 1 goto gelukt
+findstr /C:"INSTALL_FAILED_UPDATE_INCOMPATIBLE" "%TEMP%\everyday-installatie.txt" >nul
+if errorlevel 1 goto meer_oplossingen
 echo.
-echo   Staat er INSTALL_FAILED_UPDATE_INCOMPATIBLE? Dan staat er al een versie van de app
-echo   op je telefoon die met een andere sleutel is ondertekend. Verwijder de app van je
-echo   telefoon (je foto's blijven staan) en start dit bestand opnieuw.
-echo   Meer oplossingen staan onderaan HANDLEIDING.md.
+echo   De oorzaak is gevonden: op je telefoon staat al een versie van de app die met een
+echo   andere sleutel is ondertekend. Die moet er eerst af. Je foto's blijven staan: die
+echo   staan in je eigen map en niet in de app.
+if defined AL_VERWIJDERD goto zelf_verwijderen
+echo.
+choice /c JN /n /m "  Zal ik de oude app van je telefoon halen en het opnieuw proberen? Typ J of N: "
+if errorlevel 2 goto zelf_verwijderen
+if not errorlevel 1 goto zelf_verwijderen
+set "AL_VERWIJDERD=1"
+echo.
+echo   De oude app wordt van je telefoon gehaald...
+"%ADB%" uninstall nl.constantdynamics.dagelijks
+echo   Kies straks in de app dezelfde map opnieuw. Al je foto's staan er nog.
+goto bouwen
+
+:zelf_verwijderen
+echo.
+echo   Verwijder de app zelf van je telefoon en start dit bestand opnieuw. Vraagt je telefoon
+echo   bij het verwijderen of de app-gegevens bewaard moeten blijven? Zet daar GEEN vinkje.
+
+:meer_oplossingen
+echo.
+echo   Oplossingen voor de meest voorkomende problemen staan onderaan HANDLEIDING.md.
+goto mislukt
+
+:oude_bestanden
+echo   In deze map staan nog bestanden van een oudere versie tussen de nieuwe.
+echo   Dat gebeurt als je een nieuwe versie over de oude heen uitpakt.
+echo.
+echo   Verwijder deze hele map, pak het zip-bestand opnieuw uit en start dan opnieuw
+echo   (HANDLEIDING.md, Deel B). Je sleutel en je foto's staan ergens anders en blijven staan.
 
 :mislukt
 echo.
