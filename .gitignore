@@ -17,3 +17,7 @@ local.properties
 *.p12
 sleutel.properties
 keystore.properties
+
+# Python leaves these behind when a script is checked or run
+__pycache__/
+*.pyc
