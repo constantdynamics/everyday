@@ -60,6 +60,20 @@ zij vonden en wat daaraan is gedaan:
   telefoon halen. De handleiding waarschuwt voor het vinkje "app-gegevens behouden".
 - Het installatiebestand vindt de Android SDK ook als die niet op de standaardplek staat.
 
+**Nagekeken**
+
+De reparaties hierboven zijn zelf ook weer door onafhankelijke reviewers bekeken. Wat daar
+nog uitkwam, is meegenomen:
+
+- Kan de telefoon een bestand niet echt wegschrijven (volle opslag, een haperende kaart), dan
+  mislukt het opslaan nu ook echt, in plaats van dat de oude foto alvast werd weggegooid.
+- Een foto of video die je verwijdert, komt niet terug uit een eerdere, onderbroken poging
+  om hem te vervangen.
+- Het installatiebestand biedt alleen nog aan om de oude app van je telefoon te halen als
+  vaststaat dat de ondertekensleutel de oorzaak is, en niet meer na elke mislukte poging.
+- De halve grootte bij te weinig geheugen werkt nu ook als Android de foto simpelweg niet
+  kan openen in plaats van een geheugenfout te melden.
+
 **De automatische tests**
 
 - Een test die wordt overgeslagen telt niet langer als geslaagd. De flitstest werd op de

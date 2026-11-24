@@ -162,11 +162,18 @@ class ProjectRepository(
         mutex.withLock {
             val project = rereadProject(folderName)
             tree.list(project.folderId)
-                .filter { !it.isDirectory && PhotoNames.dateFromFileName(it.name) == date }
+                // Also what an interrupted save of that day left behind; otherwise that
+                // would come back as the photo that was just deleted.
+                .filter { !it.isDirectory && dayOf(it.name) == date }
                 .forEach { tree.delete(it.id) }
             republish(folderName)
         }
     }
+
+    /** The day a file belongs to: a photo, or a photo that was still being written. */
+    private fun dayOf(fileName: String): LocalDate? =
+        PhotoNames.dateFromFileName(fileName)
+            ?: PhotoNames.temporaryTarget(fileName)?.finalName?.let(PhotoNames::dateFromFileName)
 
     /** Removes the project folder with all its photos and videos. */
     suspend fun deleteProject(folderName: String) = withContext(io) {
@@ -196,7 +203,14 @@ class ProjectRepository(
 
     suspend fun deleteTimelapse(folderName: String, timelapse: Timelapse): Project = withContext(io) {
         mutex.withLock {
+            val project = rereadProject(folderName)
             tree.delete(timelapse.nodeId)
+            // And what an interrupted save of this same video left behind.
+            tree.child(project.folderId, PhotoNames.TIMELAPSE_FOLDER)?.takeIf { it.isDirectory }?.let { folder ->
+                tree.list(folder.id)
+                    .filter { !it.isDirectory && PhotoNames.temporaryTarget(it.name)?.finalName.equals(timelapse.name, ignoreCase = true) }
+                    .forEach { tree.delete(it.id) }
+            }
             republish(folderName)
         }
     }
@@ -370,7 +384,10 @@ class ProjectRepository(
      */
     private fun OutputStream.forceToDisk() {
         flush()
-        runCatching { (this as? FileOutputStream)?.fd?.sync() }
+        // When this fails, the save fails. It is the only notice the phone gives of bytes
+        // that never reached the storage (a full disk, a failing card); ignoring it would
+        // mean trusting such a file and deleting the good one it was meant to replace.
+        (this as? FileOutputStream)?.fd?.sync()
     }
 
     /**

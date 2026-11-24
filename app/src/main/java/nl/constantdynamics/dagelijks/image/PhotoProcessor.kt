@@ -65,6 +65,10 @@ object PhotoProcessor {
             // A very large sensor on a phone with little memory to spare. Half the size in
             // each direction is still far more than a timelapse needs, and beats no photo.
             decodeUpright(jpeg, crop, bounds.outWidth, bounds.outHeight, rotation, sampleSize * 2)
+        } catch (_: IOException) {
+            // Android often reports too little memory for a picture as "cannot be decoded"
+            // rather than as an error of its own, so that gets the same second chance.
+            decodeUpright(jpeg, crop, bounds.outWidth, bounds.outHeight, rotation, sampleSize * 2)
         }
         try {
             target.outputStream().buffered().use { output ->

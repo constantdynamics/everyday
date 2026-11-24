@@ -113,9 +113,14 @@ echo   De allereerste keer duurt dat lang (tien minuten of meer), daarna veel ko
 echo   Laat dit venster open en je telefoon aangesloten. Kijk af en toe op je telefoon:
 echo   vraagt die iets over installeren, kies dan Installeren of Toch installeren.
 echo.
+rem An app file from an earlier attempt is removed first. If there is one after a failed
+rem build, it was made just now, so the building went well and only the installing failed.
+set "APK=app\build\outputs\apk\release\app-release.apk"
+if exist "%APK%" del "%APK%"
 call gradlew.bat --no-daemon installRelease
 if errorlevel 1 goto bouwen_mislukt
 
+:gelukt
 if defined ADB "%ADB%" shell am start -n nl.constantdynamics.dagelijks/.MainActivity >nul 2>nul
 echo.
 echo   Klaar! Everyday staat op je telefoon.
@@ -129,15 +134,24 @@ exit /b 0
 :bouwen_mislukt
 echo.
 echo   Het is niet gelukt. Hierboven staat de foutmelding.
+if not defined ADB goto meer_oplossingen
+if not exist "%APK%" goto meer_oplossingen
+rem The app was built, so putting it on the phone is what failed. Doing that once more
+rem by hand shows the reason: a phone that holds an app signed with another key says so.
+"%ADB%" install -r "%APK%" > "%TEMP%\everyday-installatie.txt" 2>&1
+findstr /C:"Success" "%TEMP%\everyday-installatie.txt" >nul
+if not errorlevel 1 goto gelukt
+findstr /C:"INSTALL_FAILED_UPDATE_INCOMPATIBLE" "%TEMP%\everyday-installatie.txt" >nul
+if errorlevel 1 goto meer_oplossingen
 echo.
-echo   Staat er INSTALL_FAILED_UPDATE_INCOMPATIBLE? Dan staat er al een versie van de app
-echo   op je telefoon die met een andere sleutel is ondertekend. Die moet er eerst af.
-echo   Je foto's blijven staan: die staan in je eigen map en niet in de app.
-if not defined ADB goto zelf_verwijderen
+echo   De oorzaak is gevonden: op je telefoon staat al een versie van de app die met een
+echo   andere sleutel is ondertekend. Die moet er eerst af. Je foto's blijven staan: die
+echo   staan in je eigen map en niet in de app.
 if defined AL_VERWIJDERD goto zelf_verwijderen
 echo.
 choice /c JN /n /m "  Zal ik de oude app van je telefoon halen en het opnieuw proberen? Typ J of N: "
-if errorlevel 2 goto meer_oplossingen
+if errorlevel 2 goto zelf_verwijderen
+if not errorlevel 1 goto zelf_verwijderen
 set "AL_VERWIJDERD=1"
 echo.
 echo   De oude app wordt van je telefoon gehaald...
@@ -146,12 +160,13 @@ echo   Kies straks in de app dezelfde map opnieuw. Al je foto's staan er nog.
 goto bouwen
 
 :zelf_verwijderen
-echo   Verwijder de app van je telefoon en start dit bestand opnieuw. Vraagt je telefoon
+echo.
+echo   Verwijder de app zelf van je telefoon en start dit bestand opnieuw. Vraagt je telefoon
 echo   bij het verwijderen of de app-gegevens bewaard moeten blijven? Zet daar GEEN vinkje.
 
 :meer_oplossingen
 echo.
-echo   Meer oplossingen staan onderaan HANDLEIDING.md.
+echo   Oplossingen voor de meest voorkomende problemen staan onderaan HANDLEIDING.md.
 goto mislukt
 
 :oude_bestanden

@@ -504,6 +504,103 @@ class ProjectRepositoryTest {
         assertEquals(listOf(".nomedia", "2026-11-23.jpg", "project.json"), File(root, "Tuin").names())
     }
 
+    // --- The storage letting the app down ------------------------------------------------------
+
+    /** A storage on which writing breaks off after a few bytes, the way a full disk does. */
+    private class FullDiskTree(private val disk: FileTree) : FileTree by disk {
+        override fun openOutput(id: String): OutputStream {
+            val real = disk.openOutput(id)
+            return object : OutputStream() {
+                private var room = 5
+                override fun write(b: Int) = write(byteArrayOf(b.toByte()), 0, 1)
+                override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                    val fits = minOf(room, length)
+                    real.write(bytes, offset, fits)
+                    room -= fits
+                    if (fits < length) throw IOException("No space left on device")
+                }
+                override fun close() = real.close()
+            }
+        }
+    }
+
+    /** A storage that reports a new file as one byte shorter than what was written to it. */
+    private class ShortFileTree(private val disk: FileTree) : FileTree by disk {
+        override fun list(directoryId: String): List<Node> =
+            disk.list(directoryId).map { if (it.name.startsWith(".bezig-")) it.copy(size = it.size - 1) else it }
+    }
+
+    @Test
+    fun `when the disk is full while replacing, the old photo stays and nothing half is left`() = runBlocking {
+        val repository = repository()
+        repository.createProject("Tuin", Lens.BACK, AspectRatio.SQUARE)
+        repository.savePhoto("Tuin", today, jpeg("de oude foto"))
+
+        val failure = runCatching { repositoryOn(FullDiskTree(tree)).savePhoto("Tuin", today, jpeg("een nieuwe foto die niet past")) }
+
+        assertTrue(failure.exceptionOrNull() is IOException)
+        assertEquals("de oude foto", File(root, "Tuin/2026-11-23.jpg").readText())
+        assertEquals(listOf(".nomedia", "2026-11-23.jpg", "project.json"), File(root, "Tuin").names())
+    }
+
+    @Test
+    fun `when the disk is full on the first photo of a day, that day simply has no photo`() = runBlocking {
+        val repository = repository()
+        repository.createProject("Tuin", Lens.BACK, AspectRatio.SQUARE)
+
+        val failure = runCatching { repositoryOn(FullDiskTree(tree)).savePhoto("Tuin", today, jpeg("een foto die niet past")) }
+
+        assertTrue(failure.exceptionOrNull() is IOException)
+        assertTrue(repository.refresh().single().photos.isEmpty())
+        assertEquals(listOf(".nomedia", "project.json"), File(root, "Tuin").names())
+    }
+
+    @Test
+    fun `a file that did not arrive completely is not trusted`() = runBlocking {
+        val repository = repository()
+        repository.createProject("Tuin", Lens.BACK, AspectRatio.SQUARE)
+        repository.savePhoto("Tuin", today, jpeg("de oude foto"))
+        repository.saveTimelapse("Tuin", "Tuin_a_tot_b.mp4", jpeg("de oude video"))
+        val unreliable = repositoryOn(ShortFileTree(tree))
+
+        assertTrue(runCatching { unreliable.savePhoto("Tuin", today, jpeg("nieuwe foto")) }.exceptionOrNull() is IOException)
+        assertTrue(runCatching { unreliable.saveTimelapse("Tuin", "Tuin_a_tot_b.mp4", jpeg("nieuwe video")) }.exceptionOrNull() is IOException)
+
+        assertEquals("de oude foto", File(root, "Tuin/2026-11-23.jpg").readText())
+        assertEquals("de oude video", File(root, "Tuin/timelapses/Tuin_a_tot_b.mp4").readText())
+        assertEquals(listOf(".nomedia", "2026-11-23.jpg", "project.json", "timelapses"), File(root, "Tuin").names())
+        assertEquals(listOf("Tuin_a_tot_b.mp4"), File(root, "Tuin/timelapses").names())
+    }
+
+    @Test
+    fun `a deleted photo does not come back from a save that was interrupted earlier`() = runBlocking {
+        val repository = repository()
+        repository.createProject("Tuin", Lens.BACK, AspectRatio.SQUARE)
+        repository.savePhoto("Tuin", today, jpeg("de foto"))
+        // A retake that was complete but never took the place of the photo.
+        File(root, "Tuin/.bezig-9-2026-11-23.jpg").writeText("de retake")
+
+        val project = repository.deletePhoto("Tuin", today)
+
+        assertTrue(project.photos.isEmpty())
+        assertEquals(listOf(".nomedia", "project.json"), File(root, "Tuin").names())
+        assertTrue(repository.refresh().single().photos.isEmpty())
+    }
+
+    @Test
+    fun `a deleted video does not come back from a save that was interrupted earlier`() = runBlocking {
+        val repository = repository()
+        repository.createProject("Tuin", Lens.BACK, AspectRatio.SQUARE)
+        val saved = repository.saveTimelapse("Tuin", "Tuin_a_tot_b.mp4", jpeg("de video"))
+        File(root, "Tuin/timelapses/.bezig-10-Tuin_a_tot_b.mp4").writeText("nog een keer")
+
+        val project = repository.deleteTimelapse("Tuin", saved)
+
+        assertTrue(project.timelapses.isEmpty())
+        assertTrue(File(root, "Tuin/timelapses").names().isEmpty())
+        assertTrue(repository.refresh().single().timelapses.isEmpty())
+    }
+
     // --- The app dying half-way --------------------------------------------------------------
 
     /** Stands in for the app being killed: unlike an exception, nothing gets the chance to clean up. */
