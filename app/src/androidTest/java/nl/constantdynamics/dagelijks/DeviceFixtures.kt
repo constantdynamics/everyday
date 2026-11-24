@@ -1,11 +1,16 @@
 package nl.constantdynamics.dagelijks
 
-import android.util.Log
+import android.app.Activity
+import android.app.Application
+import android.content.ComponentCallbacks
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
+import android.os.Bundle
+import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
@@ -39,14 +44,86 @@ object DeviceFixtures {
 
     /**
      * Takes a screenshot named after a test that failed, to see what was on screen, and
-     * writes down why it failed. The reason is logged here, at once, because closing the
-     * app after a failure can go wrong as well and then hides the first cause.
+     * writes down why it failed: the reason, the texts on the screen at that moment and
+     * what the app went through just before. All of that is logged here, at once, because
+     * closing the app after a failure can go wrong as well and then hides the first cause.
      */
     class ScreenshotOnFailure : TestWatcher() {
+        override fun starting(description: Description) {
+            Trail.install()
+            Trail.note("TEST ${description.methodName}")
+        }
+
         override fun failed(e: Throwable?, description: Description) {
-            Log.e("DagelijksTest", "MISLUKT ${description.methodName}: $e", e)
+            Log.e(TAG, "MISLUKT ${description.methodName}: $e", e)
+            logInPieces("OP HET SCHERM", textsOnScreen())
+            logInPieces("VLAK ERVOOR", Trail.recent().joinToString(" ; "))
             screenshot("mislukt-" + description.methodName.take(40))
         }
+
+        private fun logInPieces(label: String, text: String) {
+            text.chunked(800).forEachIndexed { index, piece -> Log.e(TAG, "$label ${index + 1}: $piece") }
+        }
+
+        /** Every text and description that the phone's screen shows, whichever window it is in. */
+        private fun textsOnScreen(): String = runCatching {
+            val dump = ByteArrayOutputStream()
+            device.dumpWindowHierarchy(dump)
+            Regex("(?:text|content-desc)=\"([^\"]+)\"").findAll(dump.toString("UTF-8"))
+                .map { it.groupValues[1] }.distinct().take(70).joinToString(" | ")
+        }.getOrElse { "het scherm kon niet worden uitgelezen: $it" }
+    }
+
+    private const val TAG = "DagelijksTest"
+
+    /**
+     * The last things that happened to the app's screens and its configuration, kept in
+     * memory and only written out when a test fails.
+     */
+    private object Trail {
+        private val events = ArrayDeque<String>()
+        private var installed = false
+        private val clock = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.ROOT)
+
+        @Synchronized
+        fun note(what: String) {
+            events.addLast("${clock.format(java.util.Date())} $what")
+            while (events.size > 45) events.removeFirst()
+        }
+
+        @Synchronized
+        fun recent(): List<String> = events.toList()
+
+        @Synchronized
+        fun install() {
+            if (installed) return
+            installed = true
+            val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
+            app.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+                private fun name(activity: Activity) =
+                    activity.javaClass.simpleName + "@" + Integer.toHexString(System.identityHashCode(activity))
+
+                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) =
+                    note("${name(activity)} ${if (savedInstanceState == null) "created" else "CREATED AGAIN from saved state"} ${describe(activity.resources.configuration)}")
+
+                override fun onActivityStarted(activity: Activity) = note("${name(activity)} started")
+                override fun onActivityResumed(activity: Activity) = note("${name(activity)} resumed")
+                override fun onActivityPaused(activity: Activity) = note("${name(activity)} paused")
+                override fun onActivityStopped(activity: Activity) = note("${name(activity)} stopped")
+                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = note("${name(activity)} saved its state")
+                override fun onActivityDestroyed(activity: Activity) = note("${name(activity)} destroyed")
+            })
+            app.registerComponentCallbacks(object : ComponentCallbacks {
+                override fun onConfigurationChanged(newConfig: Configuration) = note("CONFIGURATION ${describe(newConfig)}")
+
+                @Deprecated("Deprecated in the platform")
+                override fun onLowMemory() = note("LOW MEMORY")
+            })
+        }
+
+        private fun describe(c: Configuration): String =
+            "[${c.screenWidthDp}x${c.screenHeightDp}dp orientation=${c.orientation} density=${c.densityDpi} font=${c.fontScale} " +
+                "ui=${c.uiMode} keyboard=${c.keyboard}/${c.keyboardHidden}/${c.hardKeyboardHidden} nav=${c.navigation} locales=${c.locales.toLanguageTags()}]"
     }
 
     /** Saves what is on the phone's screen right now; the workflow collects these pictures afterwards. */

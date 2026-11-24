@@ -53,7 +53,14 @@ cat "$out/metingen.txt" 2>/dev/null || true
 echo "---- Fouten van de app zelf ----"
 grep -E -A 30 "FATAL EXCEPTION|Compose Runtime internal error" "$out/logcat.txt" 2>/dev/null | head -150 || true
 echo "---- Schermafbeeldingen ----"
-ls -la "$out/schermafbeeldingen" 2>/dev/null || true
+ls "$out/schermafbeeldingen" 2>/dev/null || true
+# Last, so it is easy to find: what a failing test wrote down about itself. The frames
+# of the test framework are left out of the stack trace; they say nothing about the cause.
+echo "---- Waarom een test mislukte ----"
+grep " E DagelijksTest: " "$out/metingen.txt" 2>/dev/null \
+  | sed 's/^.* E DagelijksTest: //' \
+  | grep -v -E "^[[:space:]]*at (org\.junit|kotlinx\.coroutines|kotlin\.coroutines|androidx\.test|java\.lang\.reflect|android\.app\.Instrumentation|androidx\.compose\.ui\.test)" \
+  | cut -c1-900 | head -70 || true
 
 if [ "$status" -ne 0 ]; then exit "$status"; fi
 exit "$summary"
