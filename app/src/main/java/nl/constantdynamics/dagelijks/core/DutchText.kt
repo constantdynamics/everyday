@@ -38,5 +38,13 @@ object DutchText {
     fun timelapseSummary(photoCount: Int, photosPerSecond: Int): String =
         "${photoCount(photoCount)} ≈ ${duration(TimelapseMath.durationSeconds(photoCount, photosPerSecond))}"
 
+    /** "1 foto kon niet worden gelezen en is overgeslagen." */
+    fun photosSkipped(count: Int): String =
+        if (count == 1) {
+            "1 foto kon niet worden gelezen en is overgeslagen."
+        } else {
+            "$count foto's konden niet worden gelezen en zijn overgeslagen."
+        }
+
     fun photosPerSecond(speed: Int): String = if (speed == 1) "1 foto per seconde" else "$speed foto's per seconde"
 }

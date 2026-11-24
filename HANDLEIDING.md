@@ -107,12 +107,17 @@ Kies **Tijdens gebruik van de app**. Dat is de enige toestemming die de app vraa
 
 Als er een nieuwe versie van de app is:
 
-1. Download de zip opnieuw (stap 2) en pak hem uit in `C:\Everyday`.
-   Kies **Bestanden in de doelmap vervangen** als Windows daarom vraagt.
-2. Sluit je telefoon aan en dubbelklik weer op **installeer-op-telefoon**.
+1. Open `C:\Everyday` in de Verkenner en **verwijder de map die erin staat**. Dat is de oude
+   versie van de app-code. Je raakt er niets mee kwijt: je ondertekensleutel staat ergens
+   anders (in `C:\Users\<jouw naam>\Everyday-sleutel`) en je foto's staan op je telefoon.
+2. Download de zip opnieuw en pak hem uit in `C:\Everyday`, precies zoals bij stap 2.
+3. Sluit je telefoon aan, ga de nieuwe map in en dubbelklik weer op **installeer-op-telefoon**.
 
-De nieuwe versie komt over de oude heen. Je foto's, projecten en instellingen blijven staan.
-Dit gaat veel sneller dan de eerste keer.
+Pak een nieuwe versie niet over de oude heen uit. Dan blijven er oude bestanden tussen de
+nieuwe staan en mislukt het bouwen.
+
+De nieuwe versie komt op je telefoon over de oude heen. Je foto's, projecten en instellingen
+blijven staan. Dit gaat sneller dan de eerste keer, omdat het meeste al is gedownload.
 
 ---
 
@@ -131,6 +136,7 @@ Zo ziet de map eruit:
 Everyday
 ├── .nomedia                      zorgt dat je galerij en Google Foto's de map overslaan
 ├── Mijn gezicht
+│   ├── .nomedia                  hetzelfde, voor als deze map ooit los ergens anders staat
 │   ├── project.json              de instellingen van dit project
 │   ├── 2026-11-23.jpg            één foto per dag
 │   ├── 2026-11-24.jpg
@@ -141,6 +147,10 @@ Everyday
 ```
 
 Zie je de nieuwste foto's niet in de Verkenner? Trek de kabel los en sluit hem opnieuw aan.
+
+Zie je `.nomedia` niet? Windows verbergt bestanden waarvan de naam met een punt begint soms;
+dat is in orde. Een bestand waarvan de naam met `.bezig-` begint is een foto of video die de
+app op dat moment nog aan het opslaan is. Laat het staan; de app ruimt het zelf op.
 
 ---
 
@@ -153,8 +163,15 @@ Twee dingen. Maak van allebei af en toe een kopie op een andere plek.
 | De map **Everyday** | op je telefoon, in Documenten | Dit zijn je foto's, video's en instellingen. Er bestaat geen kopie in de cloud. |
 | De map **Everyday-sleutel** | op je computer, in `C:\Users\<jouw naam>` | Hiermee kun je de app bijwerken zonder hem eerst te verwijderen. |
 
-**Sleutel kwijt?** Dat kost je geen foto's. Verwijder de app van je telefoon, installeer hem
-opnieuw (er wordt dan een nieuwe sleutel gemaakt) en kies in de app dezelfde map. Alles is terug.
+**Sleutel kwijt?** Dat kost je geen foto's. Er wordt vanzelf een nieuwe sleutel gemaakt, maar
+de app op je telefoon is nog met de oude ondertekend en moet er daarom eerst af. Het bestand
+**installeer-op-telefoon** merkt dat en biedt aan om dat voor je te doen: antwoord dan met
+**J**. Kies daarna in de app dezelfde map. Alles is terug.
+
+Verwijder je de app liever zelf van je telefoon? Android vraagt dan of de app-gegevens bewaard
+moeten blijven (een vakje met een tekst als "… aan app-gegevens behouden"). **Zet daar geen
+vinkje.** Je foto's staan in je eigen map en blijven hoe dan ook staan; met het vinkje onthoudt
+Android de oude sleutel en lukt installeren daarna nog steeds niet.
 
 **Nieuwe telefoon?** Kopieer de map `Everyday` van je computer naar **Documents** op de nieuwe
 telefoon, installeer de app en kies die map. Je projecten gaan verder waar je was.
@@ -179,10 +196,24 @@ intrekken**, en sluit de kabel opnieuw aan.
 Android Studio staat niet op de standaardplek. Installeer het opnieuw en laat de voorgestelde
 map staan (stap 1).
 
+**"De Android SDK is niet gevonden op de gebruikelijke plek"**
+Heb je Android Studio nog nooit gestart, doe dat dan en doorloop de wizard (stap 1). Heb je dat
+al gedaan, dan heeft Android Studio de bouwstenen op een andere plek gezet (dat gebeurt
+bijvoorbeeld als er een letter met een accent in je Windows-gebruikersnaam zit). Start Android
+Studio, kies **Open**, wijs de map in `C:\Everyday` aan en wacht tot het laden onderin klaar
+is. Sluit Android Studio en dubbelklik opnieuw op **installeer-op-telefoon**.
+
 **In het zwarte venster staat `INSTALL_FAILED_UPDATE_INCOMPATIBLE`**
-Op je telefoon staat een versie van de app die met een andere sleutel is ondertekend.
-Verwijder de app van je telefoon en probeer het opnieuw. Je foto's blijven staan; kies
-daarna in de app dezelfde map.
+Op je telefoon staat een versie van de app die met een andere sleutel is ondertekend (zie
+"Sleutel kwijt?" in deel D). Het venster vraagt of het de oude app van je telefoon mag halen:
+antwoord met **J**. Je foto's blijven staan; kies daarna in de app dezelfde map.
+Had je de app al zelf verwijderd en krijg je deze melding toch? Dan heb je bij het verwijderen
+de app-gegevens laten bewaren. Ook dan lost het antwoord **J** het op.
+
+**In het zwarte venster staan veel regels met `Unresolved reference` of `Redeclaration`**
+Er staan bestanden van een oudere versie tussen de nieuwe, omdat de nieuwe versie over de oude
+heen is uitgepakt. Verwijder de map in `C:\Everyday`, pak de zip opnieuw uit en probeer het
+opnieuw (deel B).
 
 **In het zwarte venster staat iets over `SDK` of `licence`**
 Start Android Studio één keer, wacht tot het klaar is met downloaden en sluit het weer.

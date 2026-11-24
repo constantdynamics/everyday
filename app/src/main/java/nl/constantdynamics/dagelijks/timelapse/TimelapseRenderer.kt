@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.constantdynamics.dagelijks.WorkFiles
 import nl.constantdynamics.dagelijks.core.AspectRatio
 import nl.constantdynamics.dagelijks.core.PhotoNames
 import nl.constantdynamics.dagelijks.core.PixelSize
@@ -63,7 +64,8 @@ sealed interface RenderState {
  * screen, so the interface stays responsive and walking around in the app does not
  * interrupt it. The video is first written to the app's private cache and only
  * copied into the project folder when it is complete: an interrupted render leaves
- * nothing behind.
+ * nothing behind there. (What stays in the cache when the app is stopped altogether
+ * is removed the next time the app starts, see [WorkFiles].)
  */
 class TimelapseRenderer(
     private val context: Context,
@@ -103,7 +105,7 @@ class TimelapseRenderer(
 
     private suspend fun render(request: TimelapseRequest, repository: ProjectRepository): RenderState {
         if (request.photos.isEmpty()) throw IOException("Er zijn geen foto's in deze periode")
-        val workFile = File(File(context.cacheDir, "timelapse").apply { mkdirs() }, "bezig.mp4")
+        val workFile = File(WorkFiles.timelapseFolder(context.cacheDir), "bezig.mp4")
         val thread = Executors.newSingleThreadExecutor { Thread(it, "timelapse") }.asCoroutineDispatcher()
         try {
             // 1080 pixels on the short side; a phone whose encoder cannot do that gets 720.
@@ -162,7 +164,7 @@ class TimelapseRenderer(
             throw EncoderUnavailableException(failure)
         }
         val composer = FrameComposer(context, size.width, size.height, request.showDate)
-        try {
+        val outcome = try {
             var frame = 0
             var used = 0
             var skipped = 0
@@ -188,11 +190,15 @@ class TimelapseRenderer(
             }
             if (used == 0) throw IOException("Geen enkele foto kon worden gelezen")
             encoder.finish()
-            return Outcome(used, skipped, size)
+            Outcome(used, skipped, size)
         } finally {
             encoder.close()
             composer.release()
         }
+        // Android's video writer notes the Android version, and on some phones the make
+        // and model, in the file. A photo carries nothing of the kind; neither does this.
+        Mp4Metadata.strip(target)
+        return outcome
     }
 
     private fun candidateSizes(aspectRatio: AspectRatio): List<PixelSize> {

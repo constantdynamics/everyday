@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.LocalDate
+import java.util.Locale
 
 class PhotoNamesTest {
 
@@ -76,5 +77,39 @@ class PhotoNamesTest {
             "Mijn gezicht_2026-11-23_tot_2027-11-23.mp4",
             PhotoNames.timelapseFileName("Mijn gezicht", LocalDate.of(2026, 11, 23), LocalDate.of(2027, 11, 23)),
         )
+    }
+
+    @Test
+    fun `file names have ordinary digits whatever language the phone is set to`() {
+        val usual = Locale.getDefault()
+        try {
+            // Arabic as written in Egypt counts with its own digits.
+            Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+            assertEquals("2026-11-23.jpg", PhotoNames.fileNameFor(LocalDate.of(2026, 11, 23)))
+            assertEquals(
+                "Tuin_2026-11-23_tot_2027-01-05.mp4",
+                PhotoNames.timelapseFileName("Tuin", LocalDate.of(2026, 11, 23), LocalDate.of(2027, 1, 5)),
+            )
+        } finally {
+            Locale.setDefault(usual)
+        }
+    }
+
+    @Test
+    fun `a file that is still being written carries its final name and its size`() {
+        val name = PhotoNames.temporaryNameFor("2026-11-23.jpg", 4_812_345)
+        assertEquals(".bezig-4812345-2026-11-23.jpg", name)
+        assertEquals(PhotoNames.TemporaryTarget("2026-11-23.jpg", 4_812_345), PhotoNames.temporaryTarget(name))
+
+        val video = PhotoNames.temporaryNameFor("Mijn gezicht_2026-11-23_tot_2027-11-23.mp4", 12)
+        assertEquals("Mijn gezicht_2026-11-23_tot_2027-11-23.mp4", PhotoNames.temporaryTarget(video)!!.finalName)
+    }
+
+    @Test
+    fun `a temporary file is never taken for a photo, and a photo never for a temporary file`() {
+        assertNull(PhotoNames.dateFromFileName(PhotoNames.temporaryNameFor("2026-11-23.jpg", 100)))
+        assertNull(PhotoNames.temporaryTarget("2026-11-23.jpg"))
+        assertNull(PhotoNames.temporaryTarget(".nomedia"))
+        assertNull(PhotoNames.temporaryTarget(".bezig-zonder-grootte.jpg"))
     }
 }

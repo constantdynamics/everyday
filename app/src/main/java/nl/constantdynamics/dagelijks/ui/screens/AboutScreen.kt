@@ -32,6 +32,7 @@ import nl.constantdynamics.dagelijks.ui.components.AppBackground
 import nl.constantdynamics.dagelijks.ui.components.AppButton
 import nl.constantdynamics.dagelijks.ui.components.AppCard
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
+import nl.constantdynamics.dagelijks.ui.components.AppDialog
 import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
 import nl.constantdynamics.dagelijks.ui.components.SectionLabel
@@ -44,6 +45,7 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var problem by remember { mutableStateOf<String?>(null) }
+    var askingForOtherFolder by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(PickLocalFolder()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -77,10 +79,7 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
                 problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = AppColors.Coral) }
                 AppButton(
                     "Andere map kiezen",
-                    onClick = {
-                        runCatching { picker.launch(StorageAccess.suggestedStartFolder) }
-                            .onFailure { problem = "De mappenkiezer van je telefoon kon niet worden geopend." }
-                    },
+                    onClick = { askingForOtherFolder = true },
                     icon = AppIcons.Folder,
                     kind = ButtonKind.Secondary,
                     modifier = Modifier.fillMaxWidth(),
@@ -103,6 +102,32 @@ fun AboutScreen(location: String, onBack: () -> Unit) {
                 Paragraph("Versie $version")
             }
             Spacer(Modifier.height(12.dp))
+        }
+    }
+
+    if (askingForOtherFolder) {
+        AppDialog(
+            title = "Andere map kiezen?",
+            onDismiss = { askingForOtherFolder = false },
+            confirmText = "Kies een map",
+            onConfirm = {
+                askingForOtherFolder = false
+                runCatching { picker.launch(StorageAccess.suggestedStartFolder) }
+                    .onFailure { problem = "De mappenkiezer van je telefoon kon niet worden geopend." }
+            },
+            dismissText = "Annuleren",
+            confirmKind = ButtonKind.Secondary,
+        ) {
+            Text(
+                "De app kijkt daarna alleen nog in de nieuwe map. Je foto's worden niet verplaatst: de projecten die je " +
+                    "nu hebt blijven staan in “$location”, maar zijn in de app niet meer te zien.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Kies je later die map opnieuw, dan is alles weer terug.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package nl.constantdynamics.dagelijks.ui.screens
 
+import android.media.AudioManager
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.background
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -30,6 +29,7 @@ import nl.constantdynamics.dagelijks.storage.Project
 import nl.constantdynamics.dagelijks.storage.ProjectRepository
 import nl.constantdynamics.dagelijks.ui.components.AppIconButton
 import nl.constantdynamics.dagelijks.ui.components.AppIcons
+import nl.constantdynamics.dagelijks.ui.components.KeepScreenOn
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
 
 /**
@@ -50,12 +50,7 @@ fun PlayerScreen(
     }
     val uri = remember(timelapse.nodeId) { repository.locationOf(timelapse).toUri() }
     var failed by remember { mutableStateOf(false) }
-    val view = LocalView.current
-
-    DisposableEffect(view) {
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = false }
-    }
+    KeepScreenOn()
 
     Box(Modifier.fillMaxSize().background(AppColors.Ground)) {
         Box(
@@ -74,6 +69,8 @@ fun PlayerScreen(
                     modifier = Modifier.aspectRatio(project.settings.aspectRatio.value),
                     factory = { context ->
                         VideoView(context).apply {
+                            // A timelapse has no sound, so music from another app keeps playing.
+                            setAudioFocusRequest(AudioManager.AUDIOFOCUS_NONE)
                             setMediaController(MediaController(context).also { it.setAnchorView(this) })
                             setOnPreparedListener { player ->
                                 player.isLooping = true

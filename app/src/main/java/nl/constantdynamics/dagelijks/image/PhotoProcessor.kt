@@ -38,6 +38,9 @@ object PhotoProcessor {
      * @param suggestedCrop the area the camera library says matches the preview, in
      *   the coordinates of [jpeg]; null to take a centred cut
      * @param rotationDegrees how far [jpeg] must be turned clockwise to stand upright
+     * @param sampleSize 1 keeps every pixel, 2 halves the picture in both directions.
+     *   Normally 1: the processor itself falls back to half the size when the phone
+     *   has too little memory for the full picture.
      * @return the stored file and its size in pixels
      */
     fun process(
@@ -47,6 +50,7 @@ object PhotoProcessor {
         aspectRatio: AspectRatio,
         takenAt: LocalDateTime,
         target: File,
+        sampleSize: Int = 1,
     ): Processed {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, bounds)
@@ -55,8 +59,13 @@ object PhotoProcessor {
         val rotation = CropMath.normalizeRotation(rotationDegrees)
         val crop = CropMath.captureCrop(bounds.outWidth, bounds.outHeight, rotation, aspectRatio, suggestedCrop)
 
-        val cut = decodeRegion(jpeg, crop, bounds.outWidth, bounds.outHeight)
-        val upright = turnUpright(cut, rotation)
+        val upright = try {
+            decodeUpright(jpeg, crop, bounds.outWidth, bounds.outHeight, rotation, sampleSize)
+        } catch (_: OutOfMemoryError) {
+            // A very large sensor on a phone with little memory to spare. Half the size in
+            // each direction is still far more than a timelapse needs, and beats no photo.
+            decodeUpright(jpeg, crop, bounds.outWidth, bounds.outHeight, rotation, sampleSize * 2)
+        }
         try {
             target.outputStream().buffered().use { output ->
                 if (!upright.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)) {
@@ -70,9 +79,29 @@ object PhotoProcessor {
         }
     }
 
+    private fun decodeUpright(
+        jpeg: ByteArray,
+        crop: PixelRect,
+        fullWidth: Int,
+        fullHeight: Int,
+        rotation: Int,
+        sampleSize: Int,
+    ): Bitmap {
+        val cut = decodeRegion(jpeg, crop, fullWidth, fullHeight, sampleSize)
+        return try {
+            turnUpright(cut, rotation)
+        } catch (failure: OutOfMemoryError) {
+            cut.recycle()
+            throw failure
+        }
+    }
+
     /** Decodes only the part that is kept, which roughly halves memory use for cropped ratios. */
-    private fun decodeRegion(jpeg: ByteArray, crop: PixelRect, fullWidth: Int, fullHeight: Int): Bitmap {
-        val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
+    private fun decodeRegion(jpeg: ByteArray, crop: PixelRect, fullWidth: Int, fullHeight: Int, sampleSize: Int): Bitmap {
+        val options = BitmapFactory.Options().apply {
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+            inSampleSize = sampleSize
+        }
         val isWholeImage = crop.left == 0 && crop.top == 0 && crop.width == fullWidth && crop.height == fullHeight
 
         if (!isWholeImage) {
@@ -83,7 +112,7 @@ object PhotoProcessor {
                 } finally {
                     decoder.recycle()
                 }
-            }.getOrNull()
+            }.onFailure { if (it is OutOfMemoryError) throw it }.getOrNull()
             if (region != null) return region
         }
 
@@ -91,7 +120,17 @@ object PhotoProcessor {
         val full = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, options)
             ?: throw IOException("The camera image could not be decoded")
         if (isWholeImage) return full
-        val cut = Bitmap.createBitmap(full, crop.left, crop.top, crop.width, crop.height)
+        // The decoded picture is [sampleSize] times smaller than the original; so is the cut.
+        val left = (crop.left / sampleSize).coerceIn(0, full.width - 1)
+        val top = (crop.top / sampleSize).coerceIn(0, full.height - 1)
+        val width = (crop.width / sampleSize).coerceIn(1, full.width - left)
+        val height = (crop.height / sampleSize).coerceIn(1, full.height - top)
+        val cut = try {
+            Bitmap.createBitmap(full, left, top, width, height)
+        } catch (failure: OutOfMemoryError) {
+            full.recycle()
+            throw failure
+        }
         if (cut !== full) full.recycle()
         return cut
     }

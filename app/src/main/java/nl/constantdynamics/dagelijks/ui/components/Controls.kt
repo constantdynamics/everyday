@@ -7,6 +7,8 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -108,12 +110,11 @@ fun AppButton(
             Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(10.dp))
         }
-        Text(
+        FittedText(
             text = text,
             style = AppType.button,
             color = textColor,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )
     }
@@ -207,7 +208,7 @@ fun Pill(
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(6.dp))
         }
-        Text(text, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1)
+        FittedText(text, style = MaterialTheme.typography.labelMedium, color = color)
     }
 }
 
@@ -313,7 +314,11 @@ fun AppTextField(
         textStyle = MaterialTheme.typography.titleMedium.copy(color = AppColors.Text),
         cursorBrush = SolidColor(AppColors.Amber),
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-        onKeyboardAction = { onDone() },
+        // The default action is what closes the keyboard on "done"; it has to be asked for.
+        onKeyboardAction = { performDefaultAction ->
+            onDone()
+            performDefaultAction()
+        },
         decorator = { field ->
             Box(
                 modifier = Modifier
@@ -358,9 +363,13 @@ fun AppDialog(
                 .panel(corner = 24.dp, edge = AppColors.Outline)
                 .padding(22.dp),
         ) {
-            DisplayTitle(title, style = MaterialTheme.typography.headlineMedium, maxLines = 2)
-            Spacer(Modifier.height(12.dp))
-            content()
+            // With the phone on its side or a large system font the text may not fit. Then
+            // the text scrolls, and the buttons stay where they can be reached.
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                DisplayTitle(title, style = MaterialTheme.typography.headlineMedium, maxLines = 2)
+                Spacer(Modifier.height(12.dp))
+                content()
+            }
             Spacer(Modifier.height(20.dp))
             AppButton(text = confirmText, onClick = onConfirm, kind = confirmKind, modifier = Modifier.fillMaxWidth())
             if (dismissText != null) {

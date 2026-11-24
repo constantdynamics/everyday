@@ -149,9 +149,31 @@ class FolderDeviceTest {
         DeviceFixtures.screenshot("galerij-na-eerste-foto")
 
         val files = shell("ls -a $mainFolder/$project").lines().map { it.trim() }.filter { it.isNotEmpty() && it != "." && it != ".." }
-        assertEquals("files in the project folder: $files", setOf("project.json", "$today.jpg"), files.toSet())
+        // The photo went in under a temporary name and was then renamed; nothing of that is left.
+        assertEquals("files in the project folder: $files", setOf(".nomedia", "project.json", "$today.jpg"), files.toSet())
         val size = shell("stat -c %s $mainFolder/$project/$today.jpg").trim().toLong()
         assertTrue("the stored photo is only $size bytes", size > 20_000)
+
+        // --- Replacing a photo and storing a video, through the phone's real storage ----------
+        val repository = (app.container.folder.value as FolderState.Ready).repository
+        val replacement = java.io.File(app.cacheDir, "vervanging.jpg").apply { writeBytes(DeviceFixtures.solidJpeg(600, 800, android.graphics.Color.GREEN)) }
+        runBlocking { repository.savePhoto(project, today, replacement) }
+        val afterReplacing = shell("ls -a $mainFolder/$project").lines().map { it.trim() }.filter { it.isNotEmpty() && it != "." && it != ".." }
+        assertEquals("after replacing: $afterReplacing", setOf(".nomedia", "project.json", "$today.jpg"), afterReplacing.toSet())
+        assertEquals(replacement.length(), shell("stat -c %s $mainFolder/$project/$today.jpg").trim().toLong())
+
+        val video = java.io.File(app.cacheDir, "proef.mp4").apply { writeBytes(ByteArray(50_000) { 1 }) }
+        runBlocking {
+            repository.saveTimelapse(project, "proef.mp4", video)
+            video.writeBytes(ByteArray(70_000) { 2 })
+            repository.saveTimelapse(project, "proef.mp4", video)
+        }
+        val videos = shell("ls -a $mainFolder/$project/timelapses").lines().map { it.trim() }.filter { it.isNotEmpty() && it != "." && it != ".." }
+        assertEquals("videos: $videos", listOf("proef.mp4"), videos)
+        assertEquals(70_000L, shell("stat -c %s $mainFolder/$project/timelapses/proef.mp4").trim().toLong())
+        runBlocking { repository.deleteTimelapse(project, repository.project(project)!!.timelapses.single()) }
+        replacement.delete()
+        video.delete()
 
         // --- The gallery and Google Photos must not see the photo -----------------------------
         // A control picture in the ordinary Pictures folder proves that the media scan does run.

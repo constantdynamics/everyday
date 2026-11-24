@@ -25,7 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -66,6 +65,7 @@ import nl.constantdynamics.dagelijks.ui.components.AppSlider
 import nl.constantdynamics.dagelijks.ui.components.ButtonKind
 import nl.constantdynamics.dagelijks.ui.components.ChoiceTile
 import nl.constantdynamics.dagelijks.ui.components.DisplayTitle
+import nl.constantdynamics.dagelijks.ui.components.KeepScreenOn
 import nl.constantdynamics.dagelijks.ui.components.NoticeCard
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
 import nl.constantdynamics.dagelijks.ui.components.SectionLabel
@@ -96,7 +96,6 @@ fun TimelapseScreen(
     val services = LocalServices.current
     val renderer = services.timelapseRenderer
     val renderState by renderer.state.collectAsStateWithLifecycle()
-    val view = LocalView.current
 
     var speed by rememberSaveable { mutableIntStateOf(project.settings.timelapseFps) }
     var showDate by rememberSaveable { mutableStateOf(false) }
@@ -108,8 +107,12 @@ fun TimelapseScreen(
 
     val firstDate = project.photos.firstOrNull()?.date
     val lastDate = project.photos.lastOrNull()?.date
+    // A period chosen earlier may no longer fit, because photos were deleted since. Each
+    // end only counts while it still lies between the first and the last photo.
     val from = fromText?.let(LocalDate::parse)
+        ?.takeIf { firstDate != null && lastDate != null && it > firstDate && it <= lastDate }
     val to = toText?.let(LocalDate::parse)
+        ?.takeIf { firstDate != null && lastDate != null && it < lastDate && it >= (from ?: firstDate) }
     val chosen = remember(project.photos, from, to) {
         val days = Days.inPeriod(project.dates, from, to).toSet()
         project.photos.filter { it.date in days }
@@ -120,10 +123,7 @@ fun TimelapseScreen(
     val size = project.settings.aspectRatio.videoSize
 
     // Rendering continues while this screen is visible even if nobody touches the phone.
-    DisposableEffect(view, running != null) {
-        view.keepScreenOn = running != null
-        onDispose { view.keepScreenOn = false }
-    }
+    KeepScreenOn(enabled = running != null)
 
     fun start() {
         if (chosen.isEmpty() || renderer.isRunning) return
@@ -281,7 +281,7 @@ fun TimelapseScreen(
                     Text("Opgeslagen als:\ntimelapses/${state.timelapse.name}", style = MaterialTheme.typography.bodyMedium)
                     if (state.photosSkipped > 0) {
                         Text(
-                            "${DutchText.photoCount(state.photosSkipped)} kon niet worden gelezen en is overgeslagen.",
+                            DutchText.photosSkipped(state.photosSkipped),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.Coral,
                         )
@@ -420,6 +420,11 @@ private fun DayPicker(
     onPicked: (LocalDate) -> Unit,
     onClose: () -> Unit,
 ) {
+    if (earliest > latest) {
+        // Nothing to choose from; the callers prevent this, but a crash is never the answer.
+        LaunchedEffect(Unit) { onClose() }
+        return
+    }
     fun LocalDate.toMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
     fun Long.toDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
 

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -46,6 +48,7 @@ import nl.constantdynamics.dagelijks.ui.components.AppButton
 import nl.constantdynamics.dagelijks.ui.components.AppCard
 import nl.constantdynamics.dagelijks.ui.components.AppTextField
 import nl.constantdynamics.dagelijks.ui.components.ChoiceTile
+import nl.constantdynamics.dagelijks.ui.components.FittedText
 import nl.constantdynamics.dagelijks.ui.components.NoticeCard
 import nl.constantdynamics.dagelijks.ui.components.ScreenHeader
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
@@ -61,8 +64,11 @@ fun NewProjectScreen(
     val name = nameField.text.toString()
     var lens by rememberSaveable { mutableStateOf(Lens.FRONT) }
     var aspectRatio by rememberSaveable { mutableStateOf(AspectRatio.DEFAULT) }
-    var busy by rememberSaveable { mutableStateOf(false) }
+    // Not saved: when this screen is rebuilt, the work it was waiting for is no longer its own.
+    var busy by remember { mutableStateOf(false) }
     var failed by rememberSaveable { mutableStateOf(false) }
+    // No walking away in the split second that the project is being made.
+    BackHandler(enabled = busy) {}
 
     fun create() {
         if (busy || name.isBlank()) return
@@ -85,7 +91,7 @@ fun NewProjectScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ScreenHeader(title = "Nieuw project", onBack = onBack, modifier = Modifier.padding(bottom = 6.dp))
+            ScreenHeader(title = "Nieuw project", onBack = { if (!busy) onBack() }, modifier = Modifier.padding(bottom = 6.dp))
 
             AppCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -143,12 +149,12 @@ fun NewProjectScreen(
 fun LensChoice(selected: Lens, onChange: (Lens) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         ChoiceTile(selected == Lens.FRONT, onClick = { onChange(Lens.FRONT) }, modifier = Modifier.weight(1f)) {
-            Text("Voorkant", style = MaterialTheme.typography.titleMedium)
-            Text("selfie", style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+            FittedText("Voorkant", style = MaterialTheme.typography.titleMedium)
+            FittedText("selfie", style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
         }
         ChoiceTile(selected == Lens.BACK, onClick = { onChange(Lens.BACK) }, modifier = Modifier.weight(1f)) {
-            Text("Achterkant", style = MaterialTheme.typography.titleMedium)
-            Text("gewone camera", style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+            FittedText("Achterkant", style = MaterialTheme.typography.titleMedium)
+            FittedText("gewone camera", style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
         }
     }
 }
@@ -190,8 +196,8 @@ fun AspectRatioChoice(
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                Text(ratio.id, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
-                Text(
+                FittedText(ratio.id, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
+                FittedText(
                     text = when (ratio) {
                         AspectRatio.PORTRAIT_9_16 -> "hoog"
                         AspectRatio.PORTRAIT_3_4 -> "staand"
@@ -201,7 +207,6 @@ fun AspectRatioChoice(
                     style = MaterialTheme.typography.labelSmall,
                     color = AppColors.TextMuted,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
                 )
             }
         }

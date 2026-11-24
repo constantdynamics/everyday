@@ -1,5 +1,52 @@
 # Changelog
 
+## Na de code-review
+
+Negen onafhankelijke reviewers hebben de app doorgelicht, elk op een eigen onderdeel. Wat
+zij vonden en wat daaraan is gedaan:
+
+**Je foto's en video's**
+
+- Een foto of video wordt nu altijd eerst volledig weggeschreven onder een tijdelijke naam
+  (`.bezig-…`). Pas daarna verdwijnt de oude en krijgt de nieuwe zijn naam. Valt de app of
+  de telefoon halverwege uit, dan blijft de oude staan of staat de nieuwe er al, en maakt
+  de app het bij de volgende start af. Eerder kon een onderbreking op precies het verkeerde
+  moment een foto kosten of een halve foto achterlaten.
+- Een lege of halve foto telt niet meer als de foto van die dag.
+- Een `project.json` die niet te lezen is, wordt bewaard als `project-beschadigd.json` in
+  plaats van overschreven. De beeldverhouding wordt dan afgeleid van de nieuwste foto die
+  wel te lezen is.
+- Elke projectmap krijgt een eigen `.nomedia`, zodat de foto's ook uit de galerij blijven
+  als een projectmap los ergens anders terechtkomt.
+- Een timelapse bevat niets meer over je telefoon: Android zet er zelf zijn versienummer in
+  en bij sommige telefoons het merk en model. Dat wordt er na het renderen uitgehaald.
+
+**Camera**
+
+- Bleef de app een nacht open op het camerascherm, dan klopten de datum, de overlay en de
+  melding "Vandaag al gelukt" de volgende dag niet. Dat is verholpen, en de flitser staat
+  weer uit zodra je de app verlaat.
+- Geef je de cameratoestemming via de instellingen van je telefoon, dan merkt de app dat
+  meteen als je terugkomt.
+- Heeft de telefoon te weinig geheugen voor een heel grote foto, dan wordt hij op halve
+  grootte opgeslagen in plaats van dat de app stopt.
+
+**Timelapse**
+
+- Het scherm blijft aan tijdens het renderen, ook nadat je tussendoor een video hebt bekeken.
+- Geen crash meer bij het kiezen van een periode nadat er foto's zijn verwijderd.
+- Wat een afgebroken render in het werkgeheugen van de app achterliet, wordt bij de
+  volgende start opgeruimd.
+
+**Installeren en bijwerken**
+
+- Bijwerken gaat voortaan door de oude map eerst te verwijderen (HANDLEIDING.md, deel B).
+  Een nieuwe versie over de oude heen uitpakken liet oude bestanden staan, waardoor het
+  bouwen mislukte. Het installatiebestand herkent die situatie en zegt wat je moet doen.
+- Is je ondertekensleutel kwijt, dan kan het installatiebestand de oude app zelf van je
+  telefoon halen. De handleiding waarschuwt voor het vinkje "app-gegevens behouden".
+- Het installatiebestand vindt de Android SDK ook als die niet op de standaardplek staat.
+
 ## Everyday 1.0 – opnieuw opgebouwd
 
 De app is vanaf de basis opnieuw gemaakt volgens een nieuwe opdracht. De eerdere versie in

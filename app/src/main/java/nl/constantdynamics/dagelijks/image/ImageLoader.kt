@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.security.MessageDigest
+import java.util.Locale
 
 /**
  * Loads photos from the user's folder as bitmaps of a sensible size.
@@ -108,7 +109,7 @@ class ImageLoader(
         }
 
         private fun sha1(text: String): String =
-            MessageDigest.getInstance("SHA-1").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
+            MessageDigest.getInstance("SHA-1").digest(text.toByteArray()).joinToString("") { String.format(Locale.ROOT, "%02x", it) }
 
         /** Pixel size of a photo as it is viewed, taking an EXIF rotation into account. */
         fun readSize(input: InputStream): PixelSize? {

@@ -40,4 +40,10 @@ class DutchTextTest {
         assertEquals("1 foto per seconde", DutchText.photosPerSecond(1))
         assertEquals("10 foto's per seconde", DutchText.photosPerSecond(10))
     }
+
+    @Test
+    fun `skipped photos are reported in good Dutch for one and for more`() {
+        assertEquals("1 foto kon niet worden gelezen en is overgeslagen.", DutchText.photosSkipped(1))
+        assertEquals("3 foto's konden niet worden gelezen en zijn overgeslagen.", DutchText.photosSkipped(3))
+    }
 }

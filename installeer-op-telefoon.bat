@@ -10,6 +10,12 @@ echo   Everyday op je telefoon zetten
 echo   ==============================
 echo.
 
+rem --- 0. A new version unpacked over an old one leaves old files between the new ones,
+rem and then the build fails with errors nobody can make sense of. These files only
+rem existed in the first version.
+if exist "app\src\main\java\nl\constantdynamics\dagelijks\ui\components\RetroControls.kt" goto oude_bestanden
+if exist "app\src\main\java\nl\constantdynamics\dagelijks\ui\components\RetroText.kt" goto oude_bestanden
+
 rem --- 1. Java: Android Studio brings its own copy, and that is the one that fits ------
 rem A Java that happens to be installed for something else may be too old, so it is
 rem only used when Android Studio is not in one of its usual places.
@@ -29,17 +35,29 @@ goto mislukt
 
 :java_gevonden
 rem --- 2. The Android SDK that Android Studio installed ------------------------------
+rem ANDROID_HOME and ANDROID_SDK_ROOT only count when they really point at an SDK;
+rem otherwise the place where Android Studio puts it by default is used.
+set "SDK=%ANDROID_HOME%"
+if defined SDK if exist "%SDK%\platform-tools\adb.exe" goto sdk_gevonden
+set "SDK=%ANDROID_SDK_ROOT%"
+if defined SDK if exist "%SDK%\platform-tools\adb.exe" goto sdk_gevonden
 set "SDK=%LOCALAPPDATA%\Android\Sdk"
-if defined ANDROID_HOME set "SDK=%ANDROID_HOME%"
 if exist "%SDK%\platform-tools\adb.exe" goto sdk_gevonden
+rem Opening the project in Android Studio writes down where the SDK is; that is enough to build.
 if exist "local.properties" goto bouwen
-echo   De Android SDK is niet gevonden.
-echo   Start Android Studio een keer en doorloop de installatiewizard tot het einde
-echo   (HANDLEIDING.md, stap 1). Probeer het daarna opnieuw.
+echo   De Android SDK is niet gevonden op de gebruikelijke plek.
+echo.
+echo   Heb je Android Studio nog nooit gestart? Start het dan een keer en doorloop de
+echo   installatiewizard tot het einde (HANDLEIDING.md, stap 1).
+echo.
+echo   Heb je dat al gedaan? Dan staat de SDK op een andere plek. Start Android Studio,
+echo   kies Open, wijs deze map aan en wacht tot het laden onderin klaar is. Sluit
+echo   Android Studio daarna af en start dit bestand opnieuw.
 goto mislukt
 
 :sdk_gevonden
 set "ANDROID_HOME=%SDK%"
+set "ANDROID_SDK_ROOT=%SDK%"
 set "ADB=%SDK%\platform-tools\adb.exe"
 
 rem --- 3. Is a phone connected, and has it accepted this computer? -------------------
@@ -113,9 +131,35 @@ echo.
 echo   Het is niet gelukt. Hierboven staat de foutmelding.
 echo.
 echo   Staat er INSTALL_FAILED_UPDATE_INCOMPATIBLE? Dan staat er al een versie van de app
-echo   op je telefoon die met een andere sleutel is ondertekend. Verwijder de app van je
-echo   telefoon (je foto's blijven staan) en start dit bestand opnieuw.
+echo   op je telefoon die met een andere sleutel is ondertekend. Die moet er eerst af.
+echo   Je foto's blijven staan: die staan in je eigen map en niet in de app.
+if not defined ADB goto zelf_verwijderen
+if defined AL_VERWIJDERD goto zelf_verwijderen
+echo.
+choice /c JN /n /m "  Zal ik de oude app van je telefoon halen en het opnieuw proberen? Typ J of N: "
+if errorlevel 2 goto meer_oplossingen
+set "AL_VERWIJDERD=1"
+echo.
+echo   De oude app wordt van je telefoon gehaald...
+"%ADB%" uninstall nl.constantdynamics.dagelijks
+echo   Kies straks in de app dezelfde map opnieuw. Al je foto's staan er nog.
+goto bouwen
+
+:zelf_verwijderen
+echo   Verwijder de app van je telefoon en start dit bestand opnieuw. Vraagt je telefoon
+echo   bij het verwijderen of de app-gegevens bewaard moeten blijven? Zet daar GEEN vinkje.
+
+:meer_oplossingen
+echo.
 echo   Meer oplossingen staan onderaan HANDLEIDING.md.
+goto mislukt
+
+:oude_bestanden
+echo   In deze map staan nog bestanden van een oudere versie tussen de nieuwe.
+echo   Dat gebeurt als je een nieuwe versie over de oude heen uitpakt.
+echo.
+echo   Verwijder deze hele map, pak het zip-bestand opnieuw uit en start dan opnieuw
+echo   (HANDLEIDING.md, Deel B). Je sleutel en je foto's staan ergens anders en blijven staan.
 
 :mislukt
 echo.
