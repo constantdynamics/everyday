@@ -1,5 +1,6 @@
 package nl.constantdynamics.dagelijks
 
+import android.util.Log
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.media.MediaExtractor
@@ -36,9 +37,14 @@ object DeviceFixtures {
         }
     }
 
-    /** Takes a screenshot named after a test that failed, to see what was on screen. */
+    /**
+     * Takes a screenshot named after a test that failed, to see what was on screen, and
+     * writes down why it failed. The reason is logged here, at once, because closing the
+     * app after a failure can go wrong as well and then hides the first cause.
+     */
     class ScreenshotOnFailure : TestWatcher() {
         override fun failed(e: Throwable?, description: Description) {
+            Log.e("DagelijksTest", "MISLUKT ${description.methodName}: $e", e)
             screenshot("mislukt-" + description.methodName.take(40))
         }
     }

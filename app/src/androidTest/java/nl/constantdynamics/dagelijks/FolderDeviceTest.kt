@@ -175,6 +175,9 @@ class FolderDeviceTest {
         replacement.delete()
         video.delete()
 
+        // Settings that a rebuilt project.json would never have, to recognise the real one later.
+        runBlocking { repository.updateSettings(project) { it.copy(overlayPercent = 60, timelapseFps = 24) } }
+
         // --- The gallery and Google Photos must not see the photo -----------------------------
         // A control picture in the ordinary Pictures folder proves that the media scan does run.
         shell("cp $mainFolder/$project/$today.jpg /sdcard/Pictures/dagelijks-controle.jpg")
@@ -203,6 +206,10 @@ class FolderDeviceTest {
         waitForText("Vandaag gelukt")
         waitForText("1 foto")
         DeviceFixtures.screenshot("start-na-herinstallatie")
+        // Read back from project.json on the phone's own storage, not rebuilt from the photos.
+        val restored = (app.container.folder.value as FolderState.Ready).repository.project(project)!!.settings
+        assertEquals("the overlay strength did not come back", 60, restored.overlayPercent)
+        assertEquals("the timelapse speed did not come back", 24, restored.timelapseFps)
         assertEquals(listOf("Everyday"), shell("ls /sdcard/Documents").lines().map { it.trim() }.filter { it == "Everyday" })
     }
 }

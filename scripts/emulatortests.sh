@@ -20,8 +20,8 @@ adb logcat -d > "$out/logcat.txt" 2>/dev/null || true
 
 echo "---- Uitslag per test ----"
 python3 - <<'PY'
-import glob, re, html
-total = failed = 0
+import glob, re, html, sys
+total = failed = left_out = 0
 for path in sorted(glob.glob('app/build/outputs/androidTest-results/connected/**/*.xml', recursive=True)):
     text = open(path, encoding='utf-8', errors='replace').read()
     for case in re.finditer(r'<testcase name="([^"]+)" classname="([^"]+)"[^>]*?(/>|>(.*?)</testcase>)', text, re.S):
@@ -36,13 +36,24 @@ for path in sorted(glob.glob('app/build/outputs/androidTest-results/connected/**
             for line in html.unescape(problem.group(2)).strip().splitlines()[:14]:
                 print(f"         {line[:300]}")
         else:
+            left_out += 1 if skipped else 0
             print(f"{'overgeslagen' if skipped else 'geslaagd':<8} {name}")
-print(f"TOTAAL {total} tests op de emulator, {failed} mislukt")
+print(f"TOTAAL {total} tests op de emulator, {failed} mislukt, {left_out} overgeslagen")
+# A test that was skipped has proven nothing, so it does not count as passed. The same
+# goes for a run in which no test reported at all.
+if left_out or total == 0:
+    print("NIET GOED: overgeslagen of ontbrekende tests tellen als mislukt.")
+    sys.exit(1)
 PY
+summary=$?
 
 echo "---- Wat de tests hebben gemeten ----"
 cat "$out/metingen.txt" 2>/dev/null || true
+# When the app itself stopped with an error, this is where it says why.
+echo "---- Fouten van de app zelf ----"
+grep -E -A 30 "FATAL EXCEPTION|Compose Runtime internal error" "$out/logcat.txt" 2>/dev/null | head -150 || true
 echo "---- Schermafbeeldingen ----"
 ls -la "$out/schermafbeeldingen" 2>/dev/null || true
 
-exit $status
+if [ "$status" -ne 0 ]; then exit "$status"; fi
+exit "$summary"

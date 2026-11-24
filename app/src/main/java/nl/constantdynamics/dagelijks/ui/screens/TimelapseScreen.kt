@@ -301,7 +301,7 @@ fun TimelapseScreen(
             ) {
                 Text(
                     "De timelapse kon niet worden gemaakt. Controleer of er genoeg ruimte vrij is op je telefoon en probeer het opnieuw." +
-                        (state.reason?.let { "\n\n($it)" } ?: ""),
+                        (state.reason?.let { "\n\n$it." } ?: ""),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }

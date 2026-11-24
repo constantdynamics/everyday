@@ -109,7 +109,9 @@ fun FittedText(
 ) {
     var scale by remember(text, style, maxLines) { mutableFloatStateOf(1f) }
     // The width the current scale was found for; more or less room means trying again.
+    // Only a few times, so a layout that keeps changing its mind cannot keep this busy.
     var fittedFor by remember(text, style, maxLines) { mutableIntStateOf(-1) }
+    var freshStarts by remember(text, style, maxLines) { mutableIntStateOf(0) }
 
     Text(
         text = text,
@@ -129,7 +131,8 @@ fun FittedText(
         textAlign = textAlign,
         onTextLayout = { layout ->
             val room = layout.layoutInput.constraints.maxWidth
-            if (room != fittedFor && scale < 1f) {
+            if (room != fittedFor && scale < 1f && freshStarts < MAX_FRESH_STARTS) {
+                freshStarts++
                 fittedFor = room
                 scale = 1f
             } else {
@@ -141,6 +144,8 @@ fun FittedText(
         },
     )
 }
+
+private const val MAX_FRESH_STARTS = 4
 
 /** True when a line ends in the middle of a word, which only happens when the word is too wide. */
 private fun TextLayoutResult.breaksAWord(text: String): Boolean {

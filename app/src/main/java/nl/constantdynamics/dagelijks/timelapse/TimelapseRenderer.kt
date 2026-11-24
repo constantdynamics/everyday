@@ -54,6 +54,7 @@ sealed interface RenderState {
         val size: PixelSize,
     ) : RenderState
 
+    /** [reason] is a Dutch sentence for the user, or null when there is nothing more to say. */
     data class Failed(val projectFolderName: String, val reason: String?) : RenderState
 }
 
@@ -89,7 +90,9 @@ class TimelapseRenderer(
                 mutableState.value = RenderState.Idle
                 throw cancelled
             } catch (failure: Exception) {
-                mutableState.value = RenderState.Failed(request.projectFolderName, failure.message)
+                // Only a reason written for the user is passed on; the message of any other
+                // failure is English and meant for a programmer.
+                mutableState.value = RenderState.Failed(request.projectFolderName, (failure as? RenderProblem)?.message)
             }
         }
     }
@@ -104,7 +107,7 @@ class TimelapseRenderer(
     }
 
     private suspend fun render(request: TimelapseRequest, repository: ProjectRepository): RenderState {
-        if (request.photos.isEmpty()) throw IOException("Er zijn geen foto's in deze periode")
+        if (request.photos.isEmpty()) throw RenderProblem("Er zijn geen foto's in deze periode")
         val workFile = File(WorkFiles.timelapseFolder(context.cacheDir), "bezig.mp4")
         val thread = Executors.newSingleThreadExecutor { Thread(it, "timelapse") }.asCoroutineDispatcher()
         try {
@@ -121,7 +124,7 @@ class TimelapseRenderer(
                     lastFailure = failure
                 }
             }
-            val result = outcome ?: throw IOException("Je telefoon kon de video niet coderen", lastFailure)
+            val result = outcome ?: throw RenderProblem("Je telefoon kon de video niet coderen", lastFailure)
 
             mutableState.value = RenderState.Running(request.projectFolderName, request.photos.size, request.photos.size, saving = true)
             val fileName = PhotoNames.timelapseFileName(
@@ -138,6 +141,9 @@ class TimelapseRenderer(
     }
 
     private class Outcome(val used: Int, val skipped: Int, val size: PixelSize)
+
+    /** A failure whose message is Dutch and written for the user, so it can be shown as it is. */
+    private class RenderProblem(message: String, cause: Throwable? = null) : IOException(message, cause)
 
     /** The encoder refused this frame size before a single picture was written. */
     private class EncoderUnavailableException(cause: Exception) : Exception(cause)
@@ -188,7 +194,7 @@ class TimelapseRenderer(
                 }
                 mutableState.value = RenderState.Running(request.projectFolderName, index + 1, request.photos.size)
             }
-            if (used == 0) throw IOException("Geen enkele foto kon worden gelezen")
+            if (used == 0) throw RenderProblem("Geen enkele foto kon worden gelezen")
             encoder.finish()
             Outcome(used, skipped, size)
         } finally {

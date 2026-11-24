@@ -37,6 +37,19 @@ zij vonden en wat daaraan is gedaan:
 - Geen crash meer bij het kiezen van een periode nadat er foto's zijn verwijderd.
 - Wat een afgebroken render in het werkgeheugen van de app achterliet, wordt bij de
   volgende start opgeruimd.
+- De speler laat muziek van een andere app doorspelen.
+- Een foutmelding bij het renderen is nu helemaal Nederlands; technische Engelse tekst
+  wordt niet meer getoond.
+
+**Schermen**
+
+- Een scherm dat je hebt gesloten vergeet wat het onthield. Een foto openen toont dus altijd
+  die foto, en niet de foto waar je de vorige keer naartoe had geveegd. Het formulier voor
+  een nieuw project is weer leeg.
+- Teksten worden iets kleiner in plaats van afgekapt op een smal scherm of bij een groot
+  lettertype. Een vraagvenster dat niet past kun je scrollen, zodat beide knoppen bereikbaar
+  blijven.
+- De klaar-toets sluit het toetsenbord, en "Andere map kiezen" legt eerst uit wat er gebeurt.
 
 **Installeren en bijwerken**
 
@@ -46,6 +59,15 @@ zij vonden en wat daaraan is gedaan:
 - Is je ondertekensleutel kwijt, dan kan het installatiebestand de oude app zelf van je
   telefoon halen. De handleiding waarschuwt voor het vinkje "app-gegevens behouden".
 - Het installatiebestand vindt de Android SDK ook als die niet op de standaardplek staat.
+
+**De automatische tests**
+
+- Een test die wordt overgeslagen telt niet langer als geslaagd. De flitstest werd op de
+  emulator altijd overgeslagen; hij draait nu met de camera aan de voorkant.
+- De test met de echte mappenkiezer vervangt nu ook een foto, slaat een video op en
+  controleert dat instellingen na een herinstallatie echt uit `project.json` terugkomen.
+- Schermafbeeldingen voor de documentatie worden alleen nog vervangen na een volledig
+  geslaagde testronde.
 
 ## Everyday 1.0 – opnieuw opgebouwd
 

@@ -133,6 +133,7 @@ De workflow in `.github/workflows/bouw.yml` draait dit alles bij elke push.
 | Eerst onder een tijdelijke naam schrijven | Een foto of video heet `.bezig-<grootte>-<naam>` tot hij helemaal is weggeschreven; pas dan verdwijnt de oude en krijgt de nieuwe zijn naam. Valt de app halverwege uit, dan is er dus altijd nog de oude of al de nieuwe, en maakt de app de laatste stap bij de volgende start af. |
 | Een onleesbare `project.json` wordt niet weggegooid | Hij wordt bewaard als `project-beschadigd.json` naast een nieuw bestand dat uit de foto's is afgeleid. |
 | Foto opnieuw coderen, rechtop | Zo toont elk programma hem goed, ook als het EXIF negeert, en kan er geen metadata van de camera meekomen. |
+| Timelapse op 720 pixels als 1080 niet lukt | De video is 1080 pixels aan de korte zijde. Weigert de videochip van een telefoon dat formaat, dan wordt het 720. Het venster na afloop noemt de werkelijke afmetingen. |
 | 16:9 fotografeer je met de telefoon op zijn kant | Zo wordt de volle breedte van de sensor gebruikt. Welke kant boven ligt, maakt niet uit. |
 | Vaste sleutel voor debug én release, zelfde app-id | Elke build kan over elke andere heen. |
 
