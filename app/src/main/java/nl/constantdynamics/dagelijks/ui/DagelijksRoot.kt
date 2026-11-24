@@ -8,11 +8,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -137,14 +137,14 @@ class Navigator(
 }
 
 @Composable
-private fun rememberNavigator(stateHolder: SaveableStateHolder): Navigator {
+private fun rememberNavigator(onLeft: (Screen) -> Unit): Navigator {
     val stack = rememberSaveable(
         saver = listSaver<SnapshotStateList<Screen>, String>(
             save = { list -> list.map { it.encode() } },
             restore = { saved -> mutableStateListOf<Screen>().apply { addAll(saved.map(Screen::decode)) } },
         ),
     ) { mutableStateListOf<Screen>(Screen.Home) }
-    return remember(stack, stateHolder) { Navigator(stack) { stateHolder.removeState(it.encode()) } }
+    return remember(stack) { Navigator(stack, onLeft) }
 }
 
 @Composable
@@ -160,7 +160,14 @@ fun DagelijksRoot(folderState: StateFlow<FolderState>) {
 @Composable
 private fun MainNavigation(repository: ProjectRepository, location: String) {
     val stateHolder = rememberSaveableStateHolder()
-    val navigator = rememberNavigator(stateHolder)
+    // The screens that are on screen right now, a closing one still fading out included.
+    // What such a screen remembers is only thrown away once it is really gone; thrown away
+    // earlier, it would also stop being saved while it is still shown.
+    val composed = remember { mutableSetOf<String>() }
+    val navigator = rememberNavigator { left ->
+        val key = left.encode()
+        if (key !in composed) stateHolder.removeState(key)
+    }
     val scope = rememberScreenScope()
     val projects by repository.projects.collectAsStateWithLifecycle(context = Dispatchers.Main.immediate)
 
@@ -181,7 +188,15 @@ private fun MainNavigation(repository: ProjectRepository, location: String) {
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         label = "scherm",
     ) { screen ->
-        stateHolder.SaveableStateProvider(screen.encode()) {
+        val key = screen.encode()
+        DisposableEffect(key) {
+            composed += key
+            onDispose {
+                composed -= key
+                if (screen !in navigator.screens) stateHolder.removeState(key)
+            }
+        }
+        stateHolder.SaveableStateProvider(key) {
             Box(Modifier.fillMaxSize()) {
                 when (screen) {
                     Screen.Home -> HomeScreen(

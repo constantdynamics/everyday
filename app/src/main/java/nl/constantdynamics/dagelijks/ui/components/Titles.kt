@@ -7,13 +7,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.text.modifiers.TextAutoSizeLayoutScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,8 +27,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import nl.constantdynamics.dagelijks.DagelijksApp
 import nl.constantdynamics.dagelijks.ui.theme.AppColors
@@ -94,8 +93,7 @@ fun DisplayTitle(
  * gives slightly smaller letters instead of half a word. It never goes below [smallest]
  * times its own size; after that it is shortened with an ellipsis.
  *
- * Unlike [DisplayTitle] this measures nothing in advance, so it can be used anywhere,
- * also where the layout asks its children how big they would like to be.
+ * The size is found while the text is laid out, in one go, so it never visibly jumps.
  */
 @Composable
 fun FittedText(
@@ -107,45 +105,44 @@ fun FittedText(
     textAlign: TextAlign? = null,
     smallest: Float = 0.7f,
 ) {
-    var scale by remember(text, style, maxLines) { mutableFloatStateOf(1f) }
-    // The width the current scale was found for; more or less room means trying again.
-    // Only a few times, so a layout that keeps changing its mind cannot keep this busy.
-    var fittedFor by remember(text, style, maxLines) { mutableIntStateOf(-1) }
-    var freshStarts by remember(text, style, maxLines) { mutableIntStateOf(0) }
-
+    // The line height goes along with the letters, so two lines stay well spaced.
+    val fitting = if (style.lineHeight.isSp && style.fontSize.isSp) {
+        style.copy(lineHeight = (style.lineHeight.value / style.fontSize.value).em)
+    } else {
+        style
+    }
     Text(
         text = text,
         modifier = modifier,
         color = color,
-        style = if (scale == 1f) {
-            style
-        } else {
-            style.copy(
-                fontSize = style.fontSize * scale,
-                lineHeight = if (style.lineHeight.isSpecified) style.lineHeight * scale else style.lineHeight,
-            )
-        },
+        style = fitting,
         maxLines = maxLines,
         softWrap = maxLines > 1,
         overflow = TextOverflow.Ellipsis,
         textAlign = textAlign,
-        onTextLayout = { layout ->
-            val room = layout.layoutInput.constraints.maxWidth
-            if (room != fittedFor && scale < 1f && freshStarts < MAX_FRESH_STARTS) {
-                freshStarts++
-                fittedFor = room
-                scale = 1f
-            } else {
-                fittedFor = room
-                if (scale > smallest && (layout.hasVisualOverflow || layout.breaksAWord(text))) {
-                    scale = (scale - 0.06f).coerceAtLeast(smallest)
-                }
-            }
-        },
+        autoSize = if (style.fontSize.isSp) FitWithin(style.fontSize.value, smallest) else null,
     )
 }
 
-private const val MAX_FRESH_STARTS = 4
+/** The largest size, at most [largestSp], at which the text fits without breaking a word. */
+private data class FitWithin(val largestSp: Float, val smallest: Float) : TextAutoSize {
+    override fun TextAutoSizeLayoutScope.getFontSize(constraints: Constraints, text: AnnotatedString): TextUnit {
+        fun fits(sp: Float): Boolean {
+            val layout = performLayout(constraints, text, sp.sp)
+            return !layout.hasVisualOverflow && !layout.breaksAWord(text.text)
+        }
+        if (fits(largestSp)) return largestSp.sp
+        // Halve the difference a few times: a quarter of a point is fine enough to see no difference.
+        var low = largestSp * smallest
+        var high = largestSp
+        if (!fits(low)) return low.sp
+        repeat(6) {
+            val middle = (low + high) / 2
+            if (fits(middle)) low = middle else high = middle
+        }
+        return low.sp
+    }
+}
 
 /** True when a line ends in the middle of a word, which only happens when the word is too wide. */
 private fun TextLayoutResult.breaksAWord(text: String): Boolean {
