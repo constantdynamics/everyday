@@ -21,3 +21,10 @@ niet: leg in gewone taal uit wat hij zelf moet doen, en doe de rest zelf.
 - **Taal.** Alles wat de gebruiker ziet is Nederlands; code en commentaar zijn Engels.
 - **Testen.** `./gradlew testDebugUnitTest lintDebug` voor de unittests en lint; de tests op
   een emulator draaien in de workflow (`.github/workflows/bouw.yml`).
+- **Installeren.** De eigenaar installeert de app door op zijn telefoon het APK-bestand te
+  downloaden van de pagina Releases. Dat bestand maakt de workflow "Installatiebestand maken"
+  (`.github/workflows/installatiebestand.yml`) na elke geslaagde run van "Bouwen en testen" op
+  de hoofdversie, ondertekend met de vaste sleutel uit het geheim `EVERYDAY_SLEUTEL` (base64
+  van een tar.gz met `everyday-sleutel.p12` en `sleutel.properties`). De workflow controleert
+  de vingerafdruk van de sleutel en publiceert niets met een andere sleutel. Het versienummer
+  komt uit `-Peveryday.versie` en moet steeds hoger worden.

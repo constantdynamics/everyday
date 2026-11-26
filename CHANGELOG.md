@@ -1,5 +1,13 @@
 # Changelog
 
+## Installeren zonder computer
+
+- Na elke nieuwe, geteste versie maakt GitHub zelf een installatiebestand, ondertekend met je
+  vaste sleutel. Je downloadt het op je telefoon van de pagina Releases; een computer is niet
+  meer nodig. Zie het begin van HANDLEIDING.md.
+- Elke gepubliceerde versie krijgt een hoger versienummer, zodat Android hem over de vorige
+  heen installeert.
+
 ## Na de code-review
 
 Negen onafhankelijke reviewers hebben de app doorgelicht, elk op een eigen onderdeel. Wat
