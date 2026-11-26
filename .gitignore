@@ -1,0 +1,23 @@
+*.iml
+.gradle/
+.kotlin/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Signing keys and their passwords never belong in version control.
+*.jks
+*.keystore
+*.p12
+sleutel.properties
+keystore.properties
+
+# Python leaves these behind when a script is checked or run
+__pycache__/
+*.pyc

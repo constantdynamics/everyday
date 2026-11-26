@@ -1,0 +1,97 @@
+name: Installatiebestand maken
+
+# Whenever a new version on the main branch has passed "Bouwen en testen", this builds the
+# installation file for the phone, signed with the owner's own fixed key, and publishes it
+# under "Releases" so it can be downloaded straight onto the phone.
+on:
+  workflow_run:
+    workflows: ["Bouwen en testen"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: installatiebestand
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: Installatiebestand maken en publiceren
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    env:
+      # The fingerprint of the owner's key. Not secret: it is in every installed copy of the app.
+      VERWACHTE_SLEUTEL: 9a7878c8fd66f01b3e6feb526a254b82c623916e5ff93f48e89072d08db8f913
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle klaarzetten
+        uses: gradle/actions/setup-gradle@v5
+
+      # Without the owner's key the build would quietly make a new one, and that app could
+      # not be installed over the one on the phone. So without the key nothing is built.
+      - name: Ondertekensleutel klaarzetten
+        env:
+          SLEUTEL: ${{ secrets.EVERYDAY_SLEUTEL }}
+        run: |
+          if [ -z "$SLEUTEL" ]; then
+            echo "::error::Het geheim EVERYDAY_SLEUTEL ontbreekt. Zie HANDLEIDING.md, 'Je sleutel bij GitHub'."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/Everyday-sleutel"
+          printf '%s' "$SLEUTEL" | tr -d ' \r\n' | base64 -d | tar -xz -C "$RUNNER_TEMP/Everyday-sleutel"
+          for f in everyday-sleutel.p12 sleutel.properties; do
+            if [ ! -s "$RUNNER_TEMP/Everyday-sleutel/$f" ]; then
+              echo "::error::Het geheim EVERYDAY_SLEUTEL is onvolledig: $f ontbreekt."
+              exit 1
+            fi
+          done
+          echo "EVERYDAY_SLEUTELMAP=$RUNNER_TEMP/Everyday-sleutel" >> "$GITHUB_ENV"
+
+      - name: Versienummer bepalen
+        run: echo "VERSIE=$((GITHUB_RUN_NUMBER + 1))" >> "$GITHUB_ENV"
+
+      - name: App bouwen
+        run: ./gradlew --no-daemon assembleRelease -Peveryday.versie="$VERSIE"
+
+      - name: Privacy en sleutel controleren
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          bash scripts/controleer-privacy.sh "$APK"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          GEVONDEN=$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
+          if [ "$GEVONDEN" != "$VERWACHTE_SLEUTEL" ]; then
+            echo "::error::Het bestand is met een andere sleutel ondertekend ($GEVONDEN). Er wordt niets gepubliceerd."
+            exit 1
+          fi
+          cp "$APK" "Everyday-1.$VERSIE.apk"
+          sha256sum "Everyday-1.$VERSIE.apk"
+
+      - name: Publiceren onder Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMIT=$(git rev-parse --short HEAD)
+          gh release create "v1.$VERSIE" "Everyday-1.$VERSIE.apk" \
+            --target "$(git rev-parse HEAD)" \
+            --title "Everyday 1.$VERSIE" \
+            --latest \
+            --notes "Installatiebestand voor je Android-telefoon, gemaakt van versie $COMMIT nadat alle tests waren geslaagd. Open deze pagina op je telefoon en tik op Everyday-1.$VERSIE.apk om te downloaden en te installeren. Wat er veranderd is, staat in CHANGELOG.md."
+
+      - name: Sleutel opruimen
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/Everyday-sleutel"
