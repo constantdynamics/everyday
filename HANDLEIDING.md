@@ -5,14 +5,74 @@ Je hoeft niet te kunnen programmeren. Alles wat je moet doen staat hier stap voo
 
 De app heet **Everyday**, en zo heet ook de map waarin hij je foto's bewaart.
 
+Er zijn twee manieren om de app op je telefoon te krijgen:
+
+- **Gewoon downloaden op je telefoon** (aanbevolen). Je hebt geen computer nodig. Zie hieronder.
+- **Zelf bouwen met je Windows-computer** en een usb-kabel. Dat kan nog steeds, maar is
+  omslachtiger; zie deel A en B verderop.
+
+---
+
+## Installeren op je telefoon, zonder computer
+
+Elke keer dat er een nieuwe, geteste versie is, maakt GitHub daar zelf een
+installatiebestand van. Dat bestand staat op de pagina **Releases**.
+
+1. Open op je telefoon de pagina
+   <https://github.com/constantdynamics/everyday/releases/latest>.
+2. Tik onder **Assets** op het bestand **Everyday-1.….apk** om het te downloaden.
+3. Tik op het gedownloade bestand. Zegt Android dat installeren van deze bron niet is
+   toegestaan? Tik op **Instellingen**, zet **Toestaan van deze bron** aan en ga terug.
+4. Tik op **Installeren** (of **Updaten** als de app er al op staat).
+5. Waarschuwt Google Play Protect dat de app onbekend is? Dat komt doordat hij niet uit de
+   Play Store komt. Kies **Toch installeren**. Vraagt hij of de app gecontroleerd mag worden,
+   kies dan **Niet verzenden**.
+
+Een nieuwe versie installeer je op precies dezelfde manier. Hij komt over de oude heen; je
+foto's, projecten en instellingen blijven staan. Dat lukt omdat elke versie met dezelfde
+vaste sleutel is ondertekend (zie hieronder).
+
+De pagina Releases is openbaar, net als de code van de app. Er staat niets persoonlijks in:
+geen foto's, geen instellingen en geen sleutel.
+
+De eerste keer dat je de app opent, kies je waar je foto's staan: zie stap 5 verderop.
+
+### Je sleutel bij GitHub (eenmalig)
+
+GitHub kan het installatiebestand alleen maken als het jouw vaste ondertekensleutel heeft.
+Die bewaar je daar als **geheim**: een waarde die alleen de automatische bouw kan gebruiken
+en die niemand kan inzien, jij ook niet meer.
+
+Je hebt van Claude een tekstbestand **EVERYDAY_SLEUTEL.txt** gekregen. Dat ene bestand is
+je sleutel.
+
+1. Bewaar dat bestand eerst ergens veilig, bijvoorbeeld op een usb-stick of in een
+   wachtwoordmanager. Het is ook je reservekopie. Deel het met niemand.
+2. Open (liefst op een computer) <https://github.com/constantdynamics/everyday/settings/secrets/actions>
+   en log zo nodig in.
+3. Klik op **New repository secret**.
+4. Vul bij **Name** precies in: `EVERYDAY_SLEUTEL`
+5. Open EVERYDAY_SLEUTEL.txt, selecteer alle tekst (Ctrl+A), kopieer die (Ctrl+C) en plak
+   hem bij **Secret** (Ctrl+V).
+6. Klik op **Add secret**.
+
+Vanaf dan verschijnt na elke nieuwe versie die alle tests doorstaat vanzelf een
+installatiebestand onder Releases. Ontbreekt de sleutel of is hij verkeerd, dan maakt GitHub
+niets: er verschijnt dan nooit een bestand dat niet over je app heen past.
+
+---
+
+## Liever zelf bouwen met je computer
+
 **Wat je nodig hebt**
 
 - een computer met Windows
 - je Android-telefoon (Android 8 of nieuwer)
 - een usb-kabel die ook gegevens doorgeeft (niet elke oplaadkabel kan dat)
 - ongeveer een uur voor de eerste keer, waarvan het grootste deel wachten is
-
----
+- je sleutel: pak EVERYDAY_SLEUTEL.txt uit naar de map `C:\Users\<jouw naam>\Everyday-sleutel`
+  (Claude helpt je daarbij). Zonder die map maakt het bouwen een nieuwe sleutel, en dan moet
+  de app die nu op je telefoon staat er eerst af.
 
 ## Deel A – Eenmalig klaarzetten
 

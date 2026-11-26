@@ -206,8 +206,11 @@ android {
         applicationId = "nl.constantdynamics.dagelijks"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        // Every published installation file gets a higher number than the one before, so
+        // Android installs it over the previous version. Set by the workflow that publishes.
+        val version = providers.gradleProperty("everyday.versie").map(String::toInt).getOrElse(1)
+        versionCode = version
+        versionName = "1.$version"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
